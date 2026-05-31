@@ -5,13 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kirat Typing & Steno Lab</title>
     <style>
-        body { font-family: sans-serif; background: #f4f4f4; margin: 0; padding: 20px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f4f4; margin: 0; padding: 20px; }
         .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
         .nav { margin-bottom: 20px; text-align: center; }
-        .nav button { padding: 10px 20px; cursor: pointer; }
-        .timer { font-size: 24px; color: red; font-weight: bold; text-align: center; margin: 10px 0; }
-        #displayBox { background: #eee; padding: 15px; border-radius: 5px; min-height: 100px; margin-bottom: 10px; }
-        textarea { width: 100%; height: 150px; margin-top: 10px; }
+        .nav button { padding: 10px 20px; cursor: pointer; background: #333; color: white; border: none; border-radius: 5px; }
+        
+        .timer { font-size: 32px; color: red; font-weight: bold; text-align: center; margin: 15px 0; display: none; }
+        #displayBox { background: #f9f9f9; padding: 15px; border: 1px solid #ddd; border-radius: 5px; min-height: 150px; margin-bottom: 15px; font-size: 18px; line-height: 1.6; }
+        textarea { width: 100%; height: 200px; margin-top: 10px; font-size: 18px; padding: 10px; box-sizing: border-box; }
+        .btn-action { width: 100%; padding: 15px; font-size: 18px; margin-top: 10px; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 5px; }
         
         /* Smart Diff Styles */
         .res-correct { color: green; font-weight: bold; }
@@ -19,54 +21,54 @@
         .res-missing { background: yellow; color: black; font-weight: bold; }
         .res-extra { color: blue; background: #e0f7fa; font-weight: bold; }
         
-        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); }
-        .modal-content { background: white; margin: 10% auto; padding: 20px; width: 80%; border-radius: 5px; overflow-y: auto; max-height: 70vh; }
+        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; }
+        .modal-content { background: white; margin: 5% auto; padding: 20px; width: 80%; border-radius: 5px; overflow-y: auto; max-height: 80vh; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="nav">
-        <button onclick="document.getElementById('adminPanel').style.display='none'; document.getElementById('studentPanel').style.display='block'">Student</button>
-        <button onclick="document.getElementById('adminPanel').style.display='block'; document.getElementById('studentPanel').style.display='none'">Admin</button>
+        <button onclick="document.getElementById('adminPanel').style.display='none'; document.getElementById('studentPanel').style.display='block'">Student Panel</button>
+        <button onclick="document.getElementById('adminPanel').style.display='block'; document.getElementById('studentPanel').style.display='none'">Admin Panel</button>
     </div>
 
-    <!-- Student Panel -->
     <div id="studentPanel">
-        <select id="testType" onchange="loadLessons()">
+        <select id="testType" onchange="loadLessons()" style="padding:10px; width:100%;">
             <option value="Typing">Typing (10 Mins)</option>
             <option value="Steno">Steno (25 Mins)</option>
         </select>
-        <select id="testLesson" onchange="displayLessonText()"></select>
+        <select id="testLesson" onchange="displayLessonText()" style="padding:10px; width:100%; margin-top:10px;"></select>
         
         <div id="timer" class="timer">--:--</div>
-        <div id="displayBox">ਲੈਸਨ ਚੁਣੋ</div>
-        <input type="file" id="audioUpload" accept="audio/*" onchange="playAudio(this)">
-        <audio id="audioPlayer" controls style="width:100%; display:none;"></audio>
+        <div id="displayBox">ਲੈਸਨ ਚੁਣੋ...</div>
         
-        <textarea id="inputBox" disabled></textarea>
-        <button id="startBtn" onclick="startTest()">Start Test</button>
+        <p><strong>Manual Audio (Local File):</strong></p>
+        <input type="file" id="audioUpload" accept="audio/*" onchange="playAudio(this)">
+        <audio id="audioPlayer" controls style="width:100%; display:none; margin-top:10px;"></audio>
+        
+        <textarea id="inputBox" disabled placeholder="Start Test to type..."></textarea>
+        <button id="startBtn" class="btn-action" onclick="startTest()">Start Test</button>
     </div>
 
-    <!-- Admin Panel -->
     <div id="adminPanel" style="display:none;">
-        <input type="text" id="adminName" placeholder="Lesson Name">
-        <textarea id="adminText" placeholder="Lesson Text"></textarea>
-        <button onclick="saveLesson()">Save Lesson</button>
+        <h3>Add New Lesson</h3>
+        <input type="text" id="adminName" placeholder="Lesson Name" style="width:100%; padding:10px; margin-bottom:10px;">
+        <textarea id="adminText" placeholder="Paste Paragraph Here..." style="width:100%; height:150px;"></textarea>
+        <button class="btn-action" onclick="saveLesson()">Save Lesson</button>
     </div>
 </div>
 
-<!-- Modal -->
 <div id="modal"><div class="modal-content">
-    <button onclick="document.getElementById('modal').style.display='none'">Close</button>
-    <h3>Result:</h3>
-    <div id="resAccuracy"></div>
-    <div id="resDisplay"></div>
+    <button onclick="document.getElementById('modal').style.display='none'" style="padding:10px;">Close</button>
+    <h3>Result Report:</h3>
+    <div id="resAccuracy" style="font-size:20px; font-weight:bold; margin-bottom:10px;"></div>
+    <div id="resDisplay" style="line-height:2.5; border:1px solid #ddd; padding:10px;"></div>
 </div></div>
 
 <script>
     let db = JSON.parse(localStorage.getItem('kiratDB')) || { "Typing": [], "Steno": [] };
-    let timer, timeLeft;
+    let timerInterval, timeLeft;
 
     function loadLessons() {
         let type = document.getElementById('testType').value;
@@ -79,7 +81,7 @@
     function displayLessonText() {
         let type = document.getElementById('testType').value;
         let idx = document.getElementById('testLesson').value;
-        document.getElementById('displayBox').innerText = db[type][idx] ? db[type][idx].text : "No lesson";
+        document.getElementById('displayBox').innerText = db[type][idx] ? db[type][idx].text : "No lesson saved yet.";
     }
 
     function playAudio(input) {
@@ -95,19 +97,22 @@
         timeLeft = (type === 'Typing') ? 600 : 1500;
         document.getElementById('inputBox').disabled = false;
         document.getElementById('inputBox').value = "";
+        document.getElementById('inputBox').focus();
         document.getElementById('startBtn').style.display = "none";
+        document.getElementById('timer').style.display = "block";
         
-        timer = setInterval(() => {
+        timerInterval = setInterval(() => {
             timeLeft--;
-            document.getElementById('timer').innerText = Math.floor(timeLeft/60) + ":" + (timeLeft%60);
-            if(timeLeft <= 0) { clearInterval(timer); submitTest(); }
+            document.getElementById('timer').innerText = Math.floor(timeLeft/60) + ":" + (timeLeft%60).toString().padStart(2, '0');
+            if(timeLeft <= 0) { clearInterval(timerInterval); submitTest(); }
         }, 1000);
     }
 
     function submitTest() {
-        clearInterval(timer);
-        document.getElementById('inputBox').disabled = true;
+        clearInterval(timerInterval);
+        document.getElementById('timer').style.display = "none";
         document.getElementById('startBtn').style.display = "block";
+        document.getElementById('inputBox').disabled = true;
         
         let type = document.getElementById('testType').value;
         let idx = document.getElementById('testLesson').value;
@@ -138,7 +143,7 @@
         let type = document.getElementById('testType').value;
         db[type].push({ name: document.getElementById('adminName').value, text: document.getElementById('adminText').value });
         localStorage.setItem('kiratDB', JSON.stringify(db));
-        alert("Saved!"); loadLessons();
+        alert("Lesson Saved Successfully!"); loadLessons();
     }
 
     window.onload = loadLessons;
