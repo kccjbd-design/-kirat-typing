@@ -5,161 +5,284 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kirat Typing & Steno Lab</title>
     <style>
-        body { font-family: sans-serif; background: #f4f7f6; padding: 20px; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); text-align: center; }
-        select, button { padding: 10px; margin: 5px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; }
-        textarea { width: 100%; height: 200px; font-size: 18px; margin-top: 15px; padding: 10px; box-sizing: border-box; border-radius: 5px; border: 1px solid #aaa; }
-        #displayBox { background: #fff; padding: 15px; border: 1px solid #ccc; border-radius: 5px; text-align: justify; font-size: 18px; line-height: 1.8; max-height: 200px; overflow-y: auto; margin-bottom: 15px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7f6; margin: 0; padding: 0; }
+        .nav { background: #333; padding: 15px; text-align: center; }
+        .nav button { background: #4CAF50; color: white; border: none; padding: 10px 20px; margin: 0 10px; font-size: 16px; border-radius: 5px; cursor: pointer; }
+        .nav button:hover { background: #45a049; }
+        
+        .container { max-width: 1000px; margin: 20px auto; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; }
+        
+        .controls { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+        select, button, input { padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; }
+        
+        #displayBox { background: #fdfdfd; padding: 15px; border: 1px solid #ddd; border-radius: 5px; font-size: 18px; line-height: 1.8; max-height: 250px; overflow-y: auto; margin-bottom: 15px; text-align: justify; }
+        textarea { width: 100%; height: 200px; font-size: 18px; padding: 10px; box-sizing: border-box; border-radius: 5px; border: 1px solid #aaa; resize: vertical; }
+        
+        .btn-submit { background: #007BFF; color: white; border: none; cursor: pointer; width: 100%; font-weight: bold; margin-top: 15px; padding: 12px; font-size: 18px; }
+        .btn-submit:hover { background: #0056b3; }
+
+        /* Admin Panel Styles */
+        #adminPanel { display: none; }
+        .admin-form { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+        .admin-form textarea { height: 150px; }
+        .btn-save { background: #28a745; color: white; border: none; cursor: pointer; padding: 10px; font-weight: bold; }
 
         /* Result Colors */
         .res-correct { color: green; font-weight: bold; }
         .res-wrong { color: red; font-weight: bold; text-decoration: underline; }
-        .res-missing { background: yellow; color: black; font-weight: bold; padding: 0 3px; border-radius: 3px; }
-        .res-extra { color: blue; font-weight: bold; }
+        .res-missing { background: yellow; color: black; font-weight: bold; padding: 0 4px; border-radius: 3px; }
+        .res-extra { color: blue; font-weight: bold; background: #e0f7fa; padding: 0 4px; border-radius: 3px; }
 
         /* Modal Styles */
         #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; }
-        .modal-content { background: white; margin: 5% auto; padding: 20px; width: 85%; max-width: 900px; max-height: 85vh; overflow-y: auto; border-radius: 10px; text-align: left; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-        .close-btn { background: #d9534f; color: white; padding: 10px 20px; border: none; cursor: pointer; float: right; font-size: 16px; border-radius: 5px; font-weight: bold; }
-        .close-btn:hover { background: #c9302c; }
+        .modal-content { background: white; margin: 5% auto; padding: 25px; width: 90%; max-width: 1000px; max-height: 85vh; overflow-y: auto; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .close-btn { background: #d9534f; color: white; padding: 8px 15px; border: none; cursor: pointer; float: right; font-size: 16px; border-radius: 5px; }
     </style>
 </head>
 <body>
 
-<div class="container">
+<div class="nav">
+    <button onclick="switchView('student')">Student Panel</button>
+    <button onclick="switchView('admin')">Admin Panel</button>
+</div>
+
+<div class="container" id="studentPanel">
     <h2>⌨️ Kirat Typing & Steno Lab</h2>
     
-    <div>
-        <select id="lang"><option value="Punjabi">Punjabi</option></select>
-        <select id="cat"><option value="Steno">Steno</option></select>
-        <select id="lessonSelect"><option value="0">Lesson 1</option></select>
+    <div class="controls">
+        <select id="testType" onchange="updateLanguages('student')">
+            <option value="Typing">Typing</option>
+            <option value="Steno">Shorthand (Steno)</option>
+        </select>
+        <select id="testLang" onchange="loadLessons()"></select>
+        <select id="testLesson" onchange="displayLessonText()"></select>
     </div>
 
-    <div id="displayBox">ਸਲੀਕੇ ਤੋਂ ਭਾਵ ਕਿਸੇ ਕੰਮ ਨੂੰ ਕਰਨ ਜਾਂ ਜੀਵਨ ਵਿੱਚ ਵਿਚਰਨ ਦਾ ਅਜਿਹਾ ਸੁਚੱਜ ਹੈ ਜਿਸ ਨਾਲ ਕੰਮ ਕਰਨ ਵਿੱਚ ਅਸਾਨੀ ਹੋਵੇ ਅਤੇ ਦੂਜਿਆਂ ਉੱਪਰ ਉਸ ਦਾ ਚੰਗਾ ਪ੍ਰਭਾਵ ਪਵੇ।</div>
+    <div id="displayBox">ਕਿਰਪਾ ਕਰਕੇ ਉੱਪਰੋਂ ਟੈਸਟ ਚੁਣੋ...</div>
+    <textarea id="inputBox" placeholder="ਆਪਣਾ ਟੈਕਸਟ ਇੱਥੇ ਟਾਈਪ ਕਰੋ..."></textarea>
+    <button class="btn-submit" onclick="submitTest()">Submit Test</button>
+</div>
+
+<div class="container" id="adminPanel">
+    <h2>⚙️ Admin Panel - Add New Lesson</h2>
     
-    <textarea id="input" placeholder="ਇੱਥੇ ਟਾਈਪ ਕਰੋ..."></textarea>
-    
-    <button onclick="submitTest()" style="background: #28a745; color: white; border: none; cursor: pointer; margin-top: 15px; width: 100%; font-weight: bold;">Submit Test</button>
+    <div class="admin-form">
+        <select id="adminType" onchange="updateLanguages('admin')">
+            <option value="Typing">Typing</option>
+            <option value="Steno">Shorthand (Steno)</option>
+        </select>
+        <select id="adminLang"></select>
+        <input type="text" id="adminLessonName" placeholder="Lesson Name (e.g., Lesson 1, Speed Test...)">
+        <textarea id="adminLessonText" placeholder="ਪੈਰੇ ਦਾ ਟੈਕਸਟ ਇੱਥੇ ਪੇਸਟ ਕਰੋ..."></textarea>
+        <button class="btn-save" onclick="saveLesson()">Save Lesson</button>
+    </div>
+    <p id="adminMsg" style="color: green; text-align: center; font-weight: bold;"></p>
 </div>
 
 <div id="modal">
     <div class="modal-content">
         <button class="close-btn" onclick="document.getElementById('modal').style.display='none'">Close</button>
-        <h2 style="margin-top: 0; color: #333;">📊 Result Report</h2>
+        <h2>📊 Result Report</h2>
         <div id="resAccuracy"></div>
-        <hr style="border: 0; border-top: 1px solid #ddd; margin: 20px 0;">
+        <hr>
         <div id="resDisplay" style="line-height: 2.2; font-size: 18px;"></div>
     </div>
 </div>
 
 <script>
-    let defaultText = "ਸਲੀਕੇ ਤੋਂ ਭਾਵ ਕਿਸੇ ਕੰਮ ਨੂੰ ਕਰਨ ਜਾਂ ਜੀਵਨ ਵਿੱਚ ਵਿਚਰਨ ਦਾ ਅਜਿਹਾ ਸੁਚੱਜ ਹੈ ਜਿਸ ਨਾਲ ਕੰਮ ਕਰਨ ਵਿੱਚ ਅਸਾਨੀ ਹੋਵੇ ਅਤੇ ਦੂਜਿਆਂ ਉੱਪਰ ਉਸ ਦਾ ਚੰਗਾ ਪ੍ਰਭਾਵ ਪਵੇ।";
-    let data = { "Punjabi": { "Steno": [ { name: "Lesson 1", text: defaultText } ] } };
+    // 1. ਡੇਟਾਬੇਸ (Database Structure)
+    let defaultData = {
+        "Typing": { "Punjabi": [], "English": [], "Hindi": [] },
+        "Steno": { "Punjabi": [], "English": [] }
+    };
 
-    let savedData = JSON.parse(localStorage.getItem('kiratData'));
-    if(savedData) data = savedData;
+    let db = JSON.parse(localStorage.getItem('kiratDB'));
+    if (!db) {
+        // ਪਹਿਲੀ ਵਾਰ ਲਈ ਡੈਮੋ ਡੇਟਾ
+        defaultData["Typing"]["Punjabi"].push({ name: "Demo Lesson", text: "ਸਲੀਕੇ ਤੋਂ ਭਾਵ ਕਿਸੇ ਕੰਮ ਨੂੰ ਕਰਨ ਜਾਂ ਜੀਵਨ ਵਿੱਚ ਵਿਚਰਨ ਦਾ ਅਜਿਹਾ ਸੁਚੱਜ ਹੈ।" });
+        db = defaultData;
+        localStorage.setItem('kiratDB', JSON.stringify(db));
+    } else {
+        // ਪੁਰਾਣੇ ਵਰਜ਼ਨ ਤੋਂ ਨਵੇਂ ਵਿੱਚ ਸ਼ਿਫਟ ਕਰਨ ਲਈ ਸੁਰੱਖਿਆ
+        if(!db["Typing"]) db = defaultData; 
+    }
 
-    let timer; 
+    // 2. ਪੈਨਲ ਬਦਲਣ ਵਾਲਾ ਫੰਕਸ਼ਨ
+    function switchView(view) {
+        document.getElementById('studentPanel').style.display = view === 'student' ? 'block' : 'none';
+        document.getElementById('adminPanel').style.display = view === 'admin' ? 'block' : 'none';
+        if(view === 'student') { updateLanguages('student'); }
+        else { updateLanguages('admin'); }
+    }
 
+    // 3. ਡ੍ਰੌਪਡਾਊਨ (Dropdown) ਅਪਡੇਟ ਕਰਨਾ
+    function updateLanguages(panel) {
+        let typeVal = document.getElementById(panel === 'student' ? 'testType' : 'adminType').value;
+        let langSelect = document.getElementById(panel === 'student' ? 'testLang' : 'adminLang');
+        
+        langSelect.innerHTML = "";
+        let langs = Object.keys(db[typeVal]);
+        
+        langs.forEach(lang => {
+            let opt = document.createElement("option");
+            opt.value = lang; opt.textContent = lang;
+            langSelect.appendChild(opt);
+        });
+
+        if(panel === 'student') loadLessons();
+    }
+
+    // 4. ਲੈਸਨ ਲੋਡ ਕਰਨੇ (Student Panel)
+    function loadLessons() {
+        let type = document.getElementById('testType').value;
+        let lang = document.getElementById('testLang').value;
+        let lessonSelect = document.getElementById('testLesson');
+        
+        lessonSelect.innerHTML = "";
+        let lessons = db[type][lang];
+
+        if(lessons.length === 0) {
+            lessonSelect.innerHTML = "<option value=''>No lessons found</option>";
+            document.getElementById('displayBox').innerText = "ਕੋਈ ਪੈਰਾ ਨਹੀਂ ਮਿਲਿਆ। ਕਿਰਪਾ ਕਰਕੇ ਐਡਮਿਨ ਪੈਨਲ ਵਿੱਚੋਂ ਐਡ ਕਰੋ।";
+            return;
+        }
+
+        lessons.forEach((les, index) => {
+            let opt = document.createElement("option");
+            opt.value = index; opt.textContent = les.name;
+            lessonSelect.appendChild(opt);
+        });
+        displayLessonText();
+    }
+
+    function displayLessonText() {
+        let type = document.getElementById('testType').value;
+        let lang = document.getElementById('testLang').value;
+        let index = document.getElementById('testLesson').value;
+        
+        if(index !== "") {
+            document.getElementById('displayBox').innerText = db[type][lang][index].text;
+            document.getElementById('inputBox').value = ""; // Clear typing box
+        }
+    }
+
+    // 5. ਐਡਮਿਨ ਪੈਨਲ - ਲੈਸਨ ਸੇਵ ਕਰਨਾ
+    function saveLesson() {
+        let type = document.getElementById('adminType').value;
+        let lang = document.getElementById('adminLang').value;
+        let name = document.getElementById('adminLessonName').value.trim();
+        let text = document.getElementById('adminLessonText').value.trim();
+
+        if(!name || !text) { alert("Please fill both Lesson Name and Text!"); return; }
+
+        db[type][lang].push({ name: name, text: text });
+        localStorage.setItem('kiratDB', JSON.stringify(db));
+
+        document.getElementById('adminLessonName').value = "";
+        document.getElementById('adminLessonText').value = "";
+        
+        let msg = document.getElementById('adminMsg');
+        msg.innerText = "Lesson Saved Successfully! ✅";
+        setTimeout(() => msg.innerText = "", 3000);
+    }
+
+    // 6. ਟੈਸਟ ਚੈੱਕ ਕਰਨ ਦਾ ਫੰਕਸ਼ਨ (SMART COMPARISON ALGORITHM)
     function submitTest() {
-        clearInterval(timer);
-        
-        let l = document.getElementById("lang").value;
-        let c = document.getElementById("cat").value;
-        let s = document.getElementById("lessonSelect").value;
-        
-        let currentText = data[l][c][s].text;
-        
-        let origWords = currentText.trim().split(/\s+/);
-        let typedWords = document.getElementById("input").value.trim().split(/\s+/);
-        
-        if(document.getElementById("input").value.trim() === "") typedWords = [];
-        
-        let resDisplayHtml = "";
+        let type = document.getElementById('testType').value;
+        let lang = document.getElementById('testLang').value;
+        let index = document.getElementById('testLesson').value;
+
+        if(index === "") { alert("No lesson selected!"); return; }
+
+        let origText = db[type][lang][index].text;
+        let typedText = document.getElementById('inputBox').value;
+
+        let origWords = origText.trim().split(/\s+/);
+        let typedWords = typedText.trim().split(/\s+/);
+        if (typedText.trim() === "") typedWords = [];
+
+        let html = "";
         let stats = { correct: 0, wrong: 0, missing: 0, extra: 0 };
         
-        let o = 0; // Original text index
-        let t = 0; // Typed text index
+        let o = 0; // Original index
+        let t = 0; // Typed index
 
-        // Smart Alignment Algorithm
         while (o < origWords.length || t < typedWords.length) {
-            
-            // 1. ਬਿਲਕੁਲ ਸਹੀ ਮੈਚ (Perfect Match)
+            // 1. ਜੇ ਸ਼ਬਦ ਬਿਲਕੁਲ ਮੈਚ ਹੋ ਗਿਆ
             if (o < origWords.length && t < typedWords.length && origWords[o] === typedWords[t]) {
-                resDisplayHtml += `<span class="res-correct">${typedWords[t]}</span> `;
+                html += `<span class="res-correct">${typedWords[t]}</span> `;
                 stats.correct++;
-                o++;
-                t++;
+                o++; t++;
             } 
-            // 2. ਜੇ ਅਸਲ ਪੈਰਾ ਖਤਮ ਹੋ ਗਿਆ ਪਰ ਯੂਜ਼ਰ ਨੇ ਵਾਧੂ ਟਾਈਪ ਕੀਤਾ
+            // 2. ਜੇ ਅਸਲ ਪੈਰਾ ਖਤਮ ਹੋ ਗਿਆ, ਪਰ ਯੂਜ਼ਰ ਨੇ ਹੋਰ ਟਾਈਪ ਕਰ ਦਿੱਤਾ
             else if (o >= origWords.length) {
-                resDisplayHtml += `<span class="res-extra">${typedWords[t]}</span> `;
+                html += `<span class="res-extra">${typedWords[t]}</span> `;
                 stats.extra++;
                 t++;
             } 
-            // 3. ਜੇ ਯੂਜ਼ਰ ਦਾ ਟੈਕਸਟ ਖਤਮ ਹੋ ਗਿਆ ਪਰ ਅਸਲ ਪੈਰੇ 'ਚ ਸ਼ਬਦ ਬਚੇ ਹਨ
+            // 3. ਜੇ ਯੂਜ਼ਰ ਨੇ ਟਾਈਪ ਕਰਨਾ ਬੰਦ ਕਰ ਦਿੱਤਾ, ਪਰ ਅਸਲ ਪੈਰਾ ਬਾਕੀ ਹੈ
             else if (t >= typedWords.length) {
-                resDisplayHtml += `<span class="res-missing">${origWords[o]}</span> `;
+                html += `<span class="res-missing">${origWords[o]}</span> `;
                 stats.missing++;
                 o++;
             } 
-            // 4. ਜੇ ਸ਼ਬਦ ਮੈਚ ਨਾ ਕਰੇ (Mismatch)
+            // 4. ਜੇ ਸ਼ਬਦ ਮੈਚ ਨਾ ਕਰੇ (Smart Lookahead Search)
             else {
-                let lookahead = 5; // ਅੱਗੇ 5 ਸ਼ਬਦਾਂ ਤੱਕ ਚੈੱਕ ਕਰੇਗਾ ਕਿ ਗਲਤੀ ਕੀ ਹੈ
-                let bestOMatch = -1;
-                let bestTMatch = -1;
+                let windowSize = 8; // ਅਗਲੇ 8 ਸ਼ਬਦਾਂ ਤੱਕ ਚੈੱਕ ਕਰੇਗਾ
+                let matchInOrig = -1;
+                let matchInTyped = -1;
 
-                // ਚੈੱਕ ਕਰੋ ਕਿ ਕੀ ਯੂਜ਼ਰ ਨੇ ਕੋਈ ਸ਼ਬਦ ਛੱਡ ਦਿੱਤਾ ਹੈ (Missing)
-                for (let i = 1; i <= lookahead && o + i < origWords.length; i++) {
-                    if (origWords[o + i] === typedWords[t]) {
-                        bestOMatch = i; break;
-                    }
+                // ਚੈੱਕ ਕਰੋ: ਕੀ ਯੂਜ਼ਰ ਨੇ ਕੋਈ ਸ਼ਬਦ ਛੱਡ ਦਿੱਤਾ (Missing)?
+                for (let i = 1; i <= windowSize && o + i < origWords.length; i++) {
+                    if (origWords[o + i] === typedWords[t]) { matchInOrig = i; break; }
                 }
 
-                // ਚੈੱਕ ਕਰੋ ਕਿ ਕੀ ਯੂਜ਼ਰ ਨੇ ਕੋਈ ਵਾਧੂ ਸ਼ਬਦ ਲਿਖਿਆ ਹੈ (Extra)
-                for (let j = 1; j <= lookahead && t + j < typedWords.length; j++) {
-                    if (origWords[o] === typedWords[t + j]) {
-                        bestTMatch = j; break;
-                    }
+                // ਚੈੱਕ ਕਰੋ: ਕੀ ਯੂਜ਼ਰ ਨੇ ਕੋਈ ਵਾਧੂ ਸ਼ਬਦ ਪਾ ਦਿੱਤਾ (Extra)?
+                for (let j = 1; j <= windowSize && t + j < typedWords.length; j++) {
+                    if (origWords[o] === typedWords[t + j]) { matchInTyped = j; break; }
                 }
 
-                // ਫੈਸਲਾ ਕਰਨਾ ਕਿ ਗਲਤੀ ਕਿਸ ਕਿਸਮ ਦੀ ਹੈ
-                if (bestOMatch !== -1 && (bestTMatch === -1 || bestOMatch < bestTMatch)) {
-                    resDisplayHtml += `<span class="res-missing">${origWords[o]}</span> `;
+                // ਫੈਸਲਾ ਕਰਨਾ ਕਿ ਕਿਹੜੀ ਗਲਤੀ ਹੋਈ ਹੈ
+                if (matchInOrig !== -1 && (matchInTyped === -1 || matchInOrig < matchInTyped)) {
+                    // ਯੂਜ਼ਰ ਨੇ ਸ਼ਬਦ ਛੱਡਿਆ ਹੈ (Missing)
+                    html += `<span class="res-missing">${origWords[o]}</span> `;
                     stats.missing++;
                     o++;
-                } else if (bestTMatch !== -1 && (bestOMatch === -1 || bestTMatch <= bestOMatch)) {
-                    resDisplayHtml += `<span class="res-extra">${typedWords[t]}</span> `;
+                } else if (matchInTyped !== -1 && (matchInOrig === -1 || matchInTyped <= matchInOrig)) {
+                    // ਯੂਜ਼ਰ ਨੇ ਵਾਧੂ ਸ਼ਬਦ ਲਿਖਿਆ ਹੈ (Extra)
+                    html += `<span class="res-extra">${typedWords[t]}</span> `;
                     stats.extra++;
                     t++;
                 } else {
-                    // ਨਾ ਵਾਧੂ ਹੈ, ਨਾ ਛੱਡਿਆ ਹੈ, ਬਸ ਸ਼ਬਦ ਗਲਤ ਟਾਈਪ ਹੋਇਆ ਹੈ (Wrong)
-                    resDisplayHtml += `<span class="res-wrong">${typedWords[t]}</span> `;
+                    // ਸ਼ਬਦ ਗਲਤ ਟਾਈਪ ਹੋਇਆ ਹੈ (Wrong)
+                    html += `<span class="res-wrong">${typedWords[t]}</span> `;
                     stats.wrong++;
-                    o++;
-                    t++;
+                    o++; t++;
                 }
             }
         }
 
-        // Accuracy Calculation (ਸਹੀ ਸ਼ਬਦਾਂ ਦਾ ਫੀਸਦੀ)
+        // ਰਿਪੋਰਟ ਤਿਆਰ ਕਰਨੀ
         let acc = Math.round((stats.correct / origWords.length) * 100);
         if (isNaN(acc) || acc < 0) acc = 0;
 
-        // Result Summary HTML
         document.getElementById("resAccuracy").innerHTML = `
-            <div style="padding:15px; background:#f9f9f9; border:1px solid #ccc; border-radius:8px;">
-                <p style="font-size: 22px; margin: 5px 0;">Accuracy: <b style="color: ${acc > 80 ? 'green' : 'red'};">${acc}%</b></p>
-                <p class="res-correct" style="margin:8px 0; font-size:18px;">✅ Correct (ਸਹੀ): <b>${stats.correct}</b></p>
-                <p class="res-wrong" style="margin:8px 0; font-size:18px; text-decoration:none;">❌ Wrong/Typo (ਗਲਤ): <b>${stats.wrong}</b></p>
-                <p class="res-missing" style="margin:8px 0; display:inline-block; font-size:18px;">⚠️ Missing (ਛੱਡੇ ਗਏ): <b>${stats.missing}</b></p><br>
-                <p class="res-extra" style="margin:8px 0; font-size:18px;">➕ Extra (ਵਾਧੂ): <b>${stats.extra}</b></p>
+            <div style="background:#f9f9f9; padding:15px; border-radius:8px; border:1px solid #ccc;">
+                <h3 style="margin-top:0;">Accuracy: <span style="color:${acc > 80 ? 'green' : 'red'};">${acc}%</span></h3>
+                <p style="margin:5px 0; font-size:18px;">✅ ਸਹੀ (Correct): <b style="color:green;">${stats.correct}</b></p>
+                <p style="margin:5px 0; font-size:18px;">❌ ਗਲਤ (Wrong/Typo): <b style="color:red;">${stats.wrong}</b></p>
+                <p style="margin:5px 0; font-size:18px;">⚠️ ਛੱਡੇ ਗਏ (Missing): <b style="background:yellow; padding:0 5px;">${stats.missing}</b></p>
+                <p style="margin:5px 0; font-size:18px;">➕ ਵਾਧੂ (Extra): <b style="color:blue;">${stats.extra}</b></p>
             </div>
         `;
         
-        document.getElementById("resDisplay").innerHTML = resDisplayHtml;
+        document.getElementById("resDisplay").innerHTML = html;
         document.getElementById("modal").style.display = "block";
     }
+
+    // ਪੇਜ ਖੁੱਲ੍ਹਣ ਤੇ ਡਿਫੌਲਟ ਵਿਊ
+    window.onload = () => { switchView('student'); };
 </script>
 </body>
 </html>
