@@ -2,80 +2,253 @@
 <html lang="pa">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kirat Typing & Steno Lab</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
         .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
         h1 { text-align: center; color: #2c3e50; cursor: pointer; user-select: none; }
-        .menu { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
-        button { padding: 12px 20px; cursor: pointer; border: none; border-radius: 5px; font-weight: bold; background: #3498db; color: white; }
-        .btn-active { background: #27ae60; }
-        .display-area { font-size: 24px; padding: 20px; background: #fafafa; border: 2px solid #ddd; border-radius: 8px; min-height: 100px; margin-bottom: 15px; }
-        textarea { width: 100%; height: 120px; font-size: 20px; padding: 10px; border: 2px solid #3498db; border-radius: 8px; box-sizing: border-box;}
-        #adminPanel { display: none; background: #fff3cd; padding: 20px; border: 2px dashed #e67e22; border-radius: 8px; margin-top: 20px; }
+        .menu { display: flex; gap: 10px; justify-content: center; margin-bottom: 15px; }
+        button { padding: 12px 20px; cursor: pointer; border: none; border-radius: 5px; font-weight: bold; background: #3498db; color: white; font-size: 16px; }
+        .btn-active { background: #27ae60 !important; }
+        
+        .stats-bar { display: flex; justify-content: space-between; background: #e8f4f8; padding: 15px 25px; border-radius: 8px; margin-bottom: 15px; font-size: 20px; font-weight: bold; border: 1px solid #bce8f1; color: #31708f; }
+        .controls { display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center; }
+        select { padding: 10px; font-size: 18px; border-radius: 5px; border: 1px solid #ccc; width: 60%; }
+        
+        .display-area { font-size: 26px; padding: 15px; background: #f9f9f9; border: 1px solid #ccc; border-radius: 8px; height: 200px; overflow-y: auto; margin-bottom: 15px; line-height: 1.6; user-select: none; }
+        textarea { width: 100%; height: 200px; font-size: 26px; padding: 15px; border: 2px solid #3498db; border-radius: 8px; box-sizing: border-box; resize: none; line-height: 1.6; }
+        textarea:focus { outline: none; border-color: #27ae60; box-shadow: 0 0 8px rgba(39,174,96,0.3); }
+        
+        .submit-btn { background: #e74c3c; width: 100%; margin-top: 15px; font-size: 20px; padding: 15px; }
+        .submit-btn:hover { background: #c0392b; }
+        
+        #adminPanel { display: none; background: #fff3cd; padding: 20px; border: 2px dashed #e67e22; border-radius: 8px; margin-top: 25px; }
+        .admin-textarea { height: 120px; margin-top: 10px; font-size: 18px; width: 100%; border: 1px solid #e67e22; padding: 10px; box-sizing: border-box;}
+        #resultMsg { text-align: center; font-size: 22px; font-weight: bold; margin-top: 15px; color: #d35400; }
     </style>
 </head>
 <body>
+    <div class="container">
+        <h1 onclick="toggleAdmin()">⌨️ Kirat Typing & Steno Lab</h1>
+        
+        <div class="menu">
+            <button id="typeBtn" class="btn-active" onclick="setMode('typing')">Typing Mode (10 Min)</button>
+            <button id="stenoBtn" onclick="setMode('steno')">🎧 Steno Mode (25 Min)</button>
+        </div>
 
-<div class="container">
-    <h1 onclick="toggleAdmin()">⌨️ Kirat Typing & Steno Lab</h1>
-    
-    <div class="menu">
-        <button id="typeBtn" class="btn-active" onclick="setMode('typing')">⌨️ Typing Mode</button>
-        <button id="stenoBtn" onclick="setMode('steno')">🎧 Steno Mode</button>
+        <div class="stats-bar">
+            <span id="timerDisplay">⏱️ Time: 10:00</span>
+            <span id="accuracyDisplay">🎯 Accuracy: 0%</span>
+        </div>
+
+        <div class="controls">
+            <select id="lessonSelect" onchange="loadLesson()"></select>
+            <button onclick="resetTest()" style="background: #f39c12;">Reset</button>
+        </div>
+
+        <div id="display" class="display-area"></div>
+        <textarea id="input" placeholder="ਇੱਥੇ ਟਾਈਪ ਕਰਨਾ ਸ਼ੁਰੂ ਕਰੋ..." oninput="startTest()"></textarea>
+        
+        <button class="submit-btn" onclick="submitTest()">ਟੈਸਟ ਖਤਮ ਕਰੋ (Submit Test)</button>
+        <div id="resultMsg"></div>
+
+        <!-- Admin Panel -->
+        <div id="adminPanel">
+            <h3>🛠️ Admin Panel (ਨਵਾਂ ਲੈਸਨ ਐਡ ਕਰੋ)</h3>
+            <input type="text" id="newLessonName" placeholder="ਲੈਸਨ ਦਾ ਨਾਮ (ਜਿਵੇਂ: Level 4 - ਨਵਾਂ ਪਹਿਰਾ)" style="width:100%; padding:10px; font-size:16px; margin-bottom:10px; box-sizing:border-box;">
+            <textarea id="newLessonText" class="admin-textarea" placeholder="ਇੱਥੇ ਨਵਾਂ ਪਹਿਰਾ ਜਾਂ ਸ਼ਬਦ ਲਿਖੋ..."></textarea>
+            <button onclick="addCustomLesson()" style="background: #27ae60; margin-top: 10px;">Save Lesson</button>
+            <button onclick="clearProgress()" style="background: #c0392b; margin-top: 10px; float: right;">Clear Students Progress</button>
+        </div>
     </div>
 
-    <div id="mainSection">
-        <select id="langSelect" onchange="updateContent()">
-            <option value="punjabi">Punjabi</option>
-            <option value="english">English</option>
-            <option value="hindi">Hindi</option>
-        </select>
-        <div id="display" class="display-area">ਇੱਥੇ ਤੁਹਾਡਾ ਲੈਸਨ ਆਵੇਗਾ...</div>
-        <textarea id="input" placeholder="ਇੱਥੇ ਟਾਈਪ ਕਰੋ..."></textarea>
-    </div>
+    <script>
+        let defaultLessons = [
+            { name: "Level 1 (ਵਿਚਕਾਰਲੀ ਲਾਈਨ)", text: "ਕ ਮ ਜ ਲ ਹ ਕਮਲ ਜਲ ਮਲ ਹਲ ਕਲ ਜਮ ਲਕ" },
+            { name: "Level 2 (ਉੱਪਰਲੀ ਲਾਈਨ)", text: "ਤ ਰ ਚ ਟ ਪ ਤਾਰਾ ਚਾਚਾ ਪਾਰਾ ਚਟ ਪਟ ਤਰ" },
+            { name: "Level 3 (ਹੇਠਲੀ ਲਾਈਨ)", text: "ਬ ਨ ਥ ਗ ਬਣ ਗਣ ਥਨ ਨਗ ਬਗ ਗਬ" }
+        ];
 
-    <div id="adminPanel">
-        <h2>⚙️ ਐਡਮਿਨ ਪੈਨਲ</h2>
-        <textarea id="adminText" placeholder="ਨਵਾਂ ਲੈਸਨ ਇੱਥੇ ਲਿਖੋ..." style="width:100%; height:80px;"></textarea>
-        <br>
-        <button onclick="saveLesson()" style="background:#e67e22; margin-top:10px;">💾 ਸੇਵ ਕਰੋ</button>
-        <button onclick="toggleAdmin()" style="background:#7f8c8d;">❌ ਬੰਦ ਕਰੋ</button>
-    </div>
-</div>
+        let lessons = JSON.parse(localStorage.getItem('kiratLessons')) || defaultLessons;
+        let unlockedLevel = parseInt(localStorage.getItem('unlockedLevel')) || 0;
+        
+        let currentMode = 'typing';
+        let totalTime = 10 * 60; 
+        let timeLeft = totalTime;
+        let timerInterval = null;
+        let testStarted = false;
+        let currentLessonText = "";
 
-<script>
-    function toggleAdmin() {
-        let pwd = prompt("ਐਡਮਿਨ ਪਾਸਵਰਡ ਭਰੋ:");
-        if(pwd === "kirat123") {
-            document.getElementById('adminPanel').style.display = document.getElementById('adminPanel').style.display === 'block' ? 'none' : 'block';
-        } else if(pwd !== null) {
-            alert("ਗਲਤ ਪਾਸਵਰਡ!");
+        // Initialize App
+        function initApp() {
+            updateLessonDropdown();
+            loadLesson();
+            updateTimerDisplay();
         }
-    }
 
-    function setMode(mode) {
-        document.getElementById('typeBtn').className = mode === 'typing' ? 'btn-active' : '';
-        document.getElementById('stenoBtn').className = mode === 'steno' ? 'btn-active' : '';
-        updateContent();
-    }
+        function updateLessonDropdown() {
+            let select = document.getElementById("lessonSelect");
+            select.innerHTML = "";
+            lessons.forEach((lesson, index) => {
+                let option = document.createElement("option");
+                option.value = index;
+                if (index > unlockedLevel) {
+                    option.text = `🔒 ${lesson.name} (Locked)`;
+                    option.disabled = true;
+                } else {
+                    option.text = `🔓 ${lesson.name}`;
+                }
+                select.appendChild(option);
+            });
+            select.value = unlockedLevel < lessons.length ? unlockedLevel : lessons.length - 1;
+        }
 
-    function saveLesson() {
-        let text = document.getElementById('adminText').value;
-        let lang = document.getElementById('langSelect').value;
-        localStorage.setItem("lesson_" + lang, text);
-        alert("ਸਫਲਤਾਪੂਰਵਕ ਸੇਵ ਹੋ ਗਿਆ!");
-        updateContent();
-    }
+        function loadLesson() {
+            let select = document.getElementById("lessonSelect");
+            let index = select.value;
+            currentLessonText = lessons[index].text;
+            document.getElementById("display").innerText = currentLessonText;
+            resetTest();
+        }
 
-    function updateContent() {
-        let lang = document.getElementById('langSelect').value;
-        let saved = localStorage.getItem("lesson_" + lang);
-        document.getElementById('display').innerText = saved ? saved : "ਕੋਈ ਲੈਸਨ ਨਹੀਂ ਹੈ।";
-    }
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById("typeBtn").classList.remove("btn-active");
+            document.getElementById("stenoBtn").classList.remove("btn-active");
+            
+            if (mode === 'typing') {
+                document.getElementById("typeBtn").classList.add("btn-active");
+                totalTime = 10 * 60;
+            } else {
+                document.getElementById("stenoBtn").classList.add("btn-active");
+                totalTime = 25 * 60;
+            }
+            resetTest();
+        }
 
-    window.onload = updateContent;
-</script>
+        function startTest() {
+            if (!testStarted) {
+                testStarted = true;
+                timerInterval = setInterval(updateTime, 1000);
+            }
+            calculateLiveAccuracy();
+        }
+
+        function updateTime() {
+            if (timeLeft > 0) {
+                timeLeft--;
+                updateTimerDisplay();
+            } else {
+                submitTest();
+            }
+        }
+
+        function updateTimerDisplay() {
+            let minutes = Math.floor(timeLeft / 60);
+            let seconds = timeLeft % 60;
+            document.getElementById("timerDisplay").innerText = `⏱️ Time: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+
+        function calculateLiveAccuracy() {
+            let typedText = document.getElementById("input").value;
+            let originalText = currentLessonText.substring(0, typedText.length);
+            
+            if (typedText.length === 0) {
+                document.getElementById("accuracyDisplay").innerText = `🎯 Accuracy: 0%`;
+                return 0;
+            }
+
+            let correctChars = 0;
+            for (let i = 0; i < typedText.length; i++) {
+                if (typedText[i] === currentLessonText[i]) {
+                    correctChars++;
+                }
+            }
+            
+            let accuracy = Math.round((correctChars / typedText.length) * 100);
+            document.getElementById("accuracyDisplay").innerText = `🎯 Accuracy: ${accuracy}%`;
+            return accuracy;
+        }
+
+        function submitTest() {
+            clearInterval(timerInterval);
+            let typedText = document.getElementById("input").value;
+            document.getElementById("input").disabled = true;
+            
+            if(typedText.length < currentLessonText.length / 2) {
+                document.getElementById("resultMsg").innerText = "❌ ਟੈਸਟ ਬਹੁਤ ਛੋਟਾ ਹੈ! ਕਿਰਪਾ ਕਰਕੇ ਪੂਰਾ ਪਹਿਰਾ ਟਾਈਪ ਕਰੋ।";
+                return;
+            }
+
+            let finalAccuracy = calculateLiveAccuracy();
+            let currentIndex = parseInt(document.getElementById("lessonSelect").value);
+
+            if (finalAccuracy >= 98) {
+                document.getElementById("resultMsg").innerHTML = `🎉 ਸ਼ਾਨਦਾਰ! ਤੁਹਾਡੀ ਐਕਿਊਰੇਸੀ ${finalAccuracy}% ਹੈ।<br>ਅਗਲਾ ਲੈਸਨ ਖੋਲ੍ਹ ਦਿੱਤਾ ਗਿਆ ਹੈ!`;
+                if (currentIndex === unlockedLevel && unlockedLevel < lessons.length - 1) {
+                    unlockedLevel++;
+                    localStorage.setItem('unlockedLevel', unlockedLevel);
+                    setTimeout(() => {
+                        updateLessonDropdown();
+                        document.getElementById("lessonSelect").value = unlockedLevel;
+                        loadLesson();
+                    }, 3000);
+                }
+            } else {
+                document.getElementById("resultMsg").innerHTML = `⚠️ ਤੁਹਾਡੀ ਐਕਿਊਰੇਸੀ ${finalAccuracy}% ਹੈ।<br>ਅਗਲਾ ਲੈਸਨ ਖੋਲ੍ਹਣ ਲਈ 98% ਜ਼ਰੂਰੀ ਹੈ। ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ!`;
+            }
+        }
+
+        function resetTest() {
+            clearInterval(timerInterval);
+            testStarted = false;
+            timeLeft = totalTime;
+            document.getElementById("input").value = "";
+            document.getElementById("input").disabled = false;
+            document.getElementById("resultMsg").innerText = "";
+            document.getElementById("accuracyDisplay").innerText = "🎯 Accuracy: 0%";
+            updateTimerDisplay();
+            document.getElementById("input").focus();
+        }
+
+        // Admin Panel Functions
+        function toggleAdmin() {
+            let pass = prompt("ਐਡਮਿਨ ਪਾਸਵਰਡ ਭਰੋ:");
+            if (pass === "1234") { // ਪਾਸਵਰਡ ਇੱਥੇ 1234 ਰੱਖਿਆ ਗਿਆ ਹੈ
+                let panel = document.getElementById("adminPanel");
+                panel.style.display = panel.style.display === "block" ? "none" : "block";
+            } else if (pass !== null) {
+                alert("ਗਲਤ ਪਾਸਵਰਡ!");
+            }
+        }
+
+        function addCustomLesson() {
+            let name = document.getElementById("newLessonName").value;
+            let text = document.getElementById("newLessonText").value;
+            
+            if (name && text) {
+                lessons.push({ name: name, text: text });
+                localStorage.setItem('kiratLessons', JSON.stringify(lessons));
+                alert("ਨਵਾਂ ਲੈਸਨ ਸਫਲਤਾਪੂਰਵਕ ਸੇਵ ਹੋ ਗਿਆ!");
+                document.getElementById("newLessonName").value = "";
+                document.getElementById("newLessonText").value = "";
+                updateLessonDropdown();
+            } else {
+                alert("ਕਿਰਪਾ ਕਰਕੇ ਲੈਸਨ ਦਾ ਨਾਮ ਅਤੇ ਪਹਿਰਾ ਦੋਵੇਂ ਭਰੋ।");
+            }
+        }
+
+        function clearProgress() {
+            if(confirm("ਕੀ ਤੁਸੀਂ ਸਾਰੇ ਬੱਚਿਆਂ ਦੀ ਪ੍ਰੋਗ੍ਰੈਸ (Progress) ਰੀਸੈੱਟ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ? ਇਹ ਲੈਸਨ ਲੌਕ ਕਰ ਦੇਵੇਗਾ।")) {
+                unlockedLevel = 0;
+                localStorage.setItem('unlockedLevel', 0);
+                updateLessonDropdown();
+                loadLesson();
+                alert("ਪ੍ਰੋਗ੍ਰੈਸ ਰੀਸੈੱਟ ਹੋ ਗਈ ਹੈ!");
+            }
+        }
+
+        window.onload = initApp;
+    </script>
 </body>
 </html>
