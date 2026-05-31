@@ -14,7 +14,7 @@
         /* Result Colors */
         .res-correct { color: green; font-weight: bold; }
         .res-wrong { color: red; font-weight: bold; text-decoration: underline; }
-        .res-missing { background: yellow; color: black; font-weight: bold; padding: 0 2px; }
+        .res-missing { background: yellow; color: black; font-weight: bold; padding: 0 3px; border-radius: 3px; }
         .res-extra { color: blue; font-weight: bold; }
 
         /* Modal Styles */
@@ -53,23 +53,13 @@
 </div>
 
 <script>
-    // ਡਿਫੌਲਟ ਡੇਟਾ (ਜੇ LocalStorage ਵਿੱਚ ਕੁਝ ਨਾ ਹੋਵੇ ਤਾਂ ਇਹ ਚੱਲੇਗਾ)
     let defaultText = "ਸਲੀਕੇ ਤੋਂ ਭਾਵ ਕਿਸੇ ਕੰਮ ਨੂੰ ਕਰਨ ਜਾਂ ਜੀਵਨ ਵਿੱਚ ਵਿਚਰਨ ਦਾ ਅਜਿਹਾ ਸੁਚੱਜ ਹੈ ਜਿਸ ਨਾਲ ਕੰਮ ਕਰਨ ਵਿੱਚ ਅਸਾਨੀ ਹੋਵੇ ਅਤੇ ਦੂਜਿਆਂ ਉੱਪਰ ਉਸ ਦਾ ਚੰਗਾ ਪ੍ਰਭਾਵ ਪਵੇ।";
-    let data = {
-        "Punjabi": {
-            "Steno": [
-                { name: "Lesson 1", text: defaultText }
-            ]
-        }
-    };
+    let data = { "Punjabi": { "Steno": [ { name: "Lesson 1", text: defaultText } ] } };
 
-    // ਜੇ ਬ੍ਰਾਊਜ਼ਰ ਵਿੱਚ ਲੈਸਨ ਸੇਵ ਹਨ, ਤਾਂ ਉਹ ਲੋਡ ਹੋਣਗੇ
     let savedData = JSON.parse(localStorage.getItem('kiratData'));
-    if(savedData) {
-        data = savedData;
-    }
+    if(savedData) data = savedData;
 
-    let timer; // ਟਾਈਮਰ ਵੇਰੀਏਬਲ
+    let timer; 
 
     function submitTest() {
         clearInterval(timer);
@@ -80,60 +70,93 @@
         
         let currentText = data[l][c][s].text;
         
-        // ਸ਼ਬਦਾਂ ਦੀ ਐਰੇ (Array) ਬਣਾਉਣੀ
         let origWords = currentText.trim().split(/\s+/);
         let typedWords = document.getElementById("input").value.trim().split(/\s+/);
         
-        // ਜੇ ਟੈਕਸਟ ਏਰੀਆ ਖਾਲੀ ਹੈ ਤਾਂ ਐਰੇ ਨੂੰ ਖਾਲੀ ਕਰ ਦਿਓ
-        if(document.getElementById("input").value.trim() === "") {
-            typedWords = [];
-        }
+        if(document.getElementById("input").value.trim() === "") typedWords = [];
         
         let resDisplayHtml = "";
         let stats = { correct: 0, wrong: 0, missing: 0, extra: 0 };
         
-        let maxLen = Math.max(origWords.length, typedWords.length);
+        let o = 0; // Original text index
+        let t = 0; // Typed text index
 
-        // ਸ਼ਬਦ-ਦਰ-ਸ਼ਬਦ ਤੁਲਨਾ (ਸਿੱਧੀ ਚੈਕਿੰਗ)
-        for (let i = 0; i < maxLen; i++) {
-            let o = origWords[i];
-            let t = typedWords[i];
-
-            if (t === undefined) {
-                // ਸ਼ਬਦ ਛੱਡ ਦਿੱਤਾ (Missing)
-                resDisplayHtml += `<span class="res-missing">${o}</span> `;
-                stats.missing++;
-            } else if (o === undefined) {
-                // ਵਾਧੂ ਸ਼ਬਦ ਲਿਖ ਦਿੱਤਾ (Extra)
-                resDisplayHtml += `<span class="res-extra">${t}</span> `;
-                stats.extra++;
-            } else if (o === t) {
-                // ਬਿਲਕੁਲ ਸਹੀ (Correct)
-                resDisplayHtml += `<span class="res-correct">${t}</span> `;
+        // Smart Alignment Algorithm
+        while (o < origWords.length || t < typedWords.length) {
+            
+            // 1. ਬਿਲਕੁਲ ਸਹੀ ਮੈਚ (Perfect Match)
+            if (o < origWords.length && t < typedWords.length && origWords[o] === typedWords[t]) {
+                resDisplayHtml += `<span class="res-correct">${typedWords[t]}</span> `;
                 stats.correct++;
-            } else {
-                // ਗਲਤ ਸ਼ਬਦ (Wrong)
-                resDisplayHtml += `<span class="res-wrong">${t}</span> `;
-                stats.wrong++;
+                o++;
+                t++;
+            } 
+            // 2. ਜੇ ਅਸਲ ਪੈਰਾ ਖਤਮ ਹੋ ਗਿਆ ਪਰ ਯੂਜ਼ਰ ਨੇ ਵਾਧੂ ਟਾਈਪ ਕੀਤਾ
+            else if (o >= origWords.length) {
+                resDisplayHtml += `<span class="res-extra">${typedWords[t]}</span> `;
+                stats.extra++;
+                t++;
+            } 
+            // 3. ਜੇ ਯੂਜ਼ਰ ਦਾ ਟੈਕਸਟ ਖਤਮ ਹੋ ਗਿਆ ਪਰ ਅਸਲ ਪੈਰੇ 'ਚ ਸ਼ਬਦ ਬਚੇ ਹਨ
+            else if (t >= typedWords.length) {
+                resDisplayHtml += `<span class="res-missing">${origWords[o]}</span> `;
+                stats.missing++;
+                o++;
+            } 
+            // 4. ਜੇ ਸ਼ਬਦ ਮੈਚ ਨਾ ਕਰੇ (Mismatch)
+            else {
+                let lookahead = 5; // ਅੱਗੇ 5 ਸ਼ਬਦਾਂ ਤੱਕ ਚੈੱਕ ਕਰੇਗਾ ਕਿ ਗਲਤੀ ਕੀ ਹੈ
+                let bestOMatch = -1;
+                let bestTMatch = -1;
+
+                // ਚੈੱਕ ਕਰੋ ਕਿ ਕੀ ਯੂਜ਼ਰ ਨੇ ਕੋਈ ਸ਼ਬਦ ਛੱਡ ਦਿੱਤਾ ਹੈ (Missing)
+                for (let i = 1; i <= lookahead && o + i < origWords.length; i++) {
+                    if (origWords[o + i] === typedWords[t]) {
+                        bestOMatch = i; break;
+                    }
+                }
+
+                // ਚੈੱਕ ਕਰੋ ਕਿ ਕੀ ਯੂਜ਼ਰ ਨੇ ਕੋਈ ਵਾਧੂ ਸ਼ਬਦ ਲਿਖਿਆ ਹੈ (Extra)
+                for (let j = 1; j <= lookahead && t + j < typedWords.length; j++) {
+                    if (origWords[o] === typedWords[t + j]) {
+                        bestTMatch = j; break;
+                    }
+                }
+
+                // ਫੈਸਲਾ ਕਰਨਾ ਕਿ ਗਲਤੀ ਕਿਸ ਕਿਸਮ ਦੀ ਹੈ
+                if (bestOMatch !== -1 && (bestTMatch === -1 || bestOMatch < bestTMatch)) {
+                    resDisplayHtml += `<span class="res-missing">${origWords[o]}</span> `;
+                    stats.missing++;
+                    o++;
+                } else if (bestTMatch !== -1 && (bestOMatch === -1 || bestTMatch <= bestOMatch)) {
+                    resDisplayHtml += `<span class="res-extra">${typedWords[t]}</span> `;
+                    stats.extra++;
+                    t++;
+                } else {
+                    // ਨਾ ਵਾਧੂ ਹੈ, ਨਾ ਛੱਡਿਆ ਹੈ, ਬਸ ਸ਼ਬਦ ਗਲਤ ਟਾਈਪ ਹੋਇਆ ਹੈ (Wrong)
+                    resDisplayHtml += `<span class="res-wrong">${typedWords[t]}</span> `;
+                    stats.wrong++;
+                    o++;
+                    t++;
+                }
             }
         }
 
-        // Accuracy (ਸ਼ੁੱਧਤਾ) ਕੱਢਣੀ
+        // Accuracy Calculation (ਸਹੀ ਸ਼ਬਦਾਂ ਦਾ ਫੀਸਦੀ)
         let acc = Math.round((stats.correct / origWords.length) * 100);
         if (isNaN(acc) || acc < 0) acc = 0;
 
-        // ਰਿਜ਼ਲਟ ਦਾ ਡੱਬਾ (Summary UI)
+        // Result Summary HTML
         document.getElementById("resAccuracy").innerHTML = `
             <div style="padding:15px; background:#f9f9f9; border:1px solid #ccc; border-radius:8px;">
                 <p style="font-size: 22px; margin: 5px 0;">Accuracy: <b style="color: ${acc > 80 ? 'green' : 'red'};">${acc}%</b></p>
                 <p class="res-correct" style="margin:8px 0; font-size:18px;">✅ Correct (ਸਹੀ): <b>${stats.correct}</b></p>
-                <p class="res-wrong" style="margin:8px 0; font-size:18px; text-decoration:none;">❌ Wrong (ਗਲਤ): <b>${stats.wrong}</b></p>
+                <p class="res-wrong" style="margin:8px 0; font-size:18px; text-decoration:none;">❌ Wrong/Typo (ਗਲਤ): <b>${stats.wrong}</b></p>
                 <p class="res-missing" style="margin:8px 0; display:inline-block; font-size:18px;">⚠️ Missing (ਛੱਡੇ ਗਏ): <b>${stats.missing}</b></p><br>
                 <p class="res-extra" style="margin:8px 0; font-size:18px;">➕ Extra (ਵਾਧੂ): <b>${stats.extra}</b></p>
             </div>
         `;
         
-        // ਸਕਰੀਨ 'ਤੇ ਰਿਜ਼ਲਟ ਦਿਖਾਉਣਾ
         document.getElementById("resDisplay").innerHTML = resDisplayHtml;
         document.getElementById("modal").style.display = "block";
     }
