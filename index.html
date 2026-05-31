@@ -18,6 +18,8 @@
     <div class="container">
         <h1 onclick="toggleAdmin()" style="text-align:center; cursor:pointer;">⌨️ Kirat Typing & Steno Lab</h1>
         
+        <div style="text-align:center; font-size: 24px; margin-bottom:10px; font-weight:bold;">⏱️ <span id="timer">10:00</span></div>
+
         <div style="display:flex; gap:10px; margin-bottom:10px;">
             <select id="lang" onchange="loadLesson()"><option value="Punjabi">Punjabi</option><option value="English">English</option><option value="Hindi">Hindi</option></select>
             <select id="cat" onchange="loadLesson()">
@@ -30,15 +32,15 @@
         </div>
         
         <div id="display" class="display-area"></div>
-        <textarea id="input" placeholder="ਇੱਥੇ ਟਾਈਪ ਕਰੋ..."></textarea>
+        <textarea id="input" oninput="startTimer()" placeholder="ਇੱਥੇ ਟਾਈਪ ਕਰੋ..."></textarea>
         <button onclick="submitTest()" style="width:100%; padding:15px; margin-top:10px; background:#e74c3c; color:white; font-size:18px;">Submit Test</button>
 
         <div id="adminPanel">
             <h3>🛠️ Add New Lesson (Manual)</h3>
             <input type="text" id="adminName" placeholder="Lesson Name" style="width:100%; padding:10px; margin-bottom:10px;">
-            <textarea id="adminText" placeholder="Paste text here..." style="width:100%; height:100px; padding:10px; margin-bottom:10px;"></textarea>
+            <textarea id="adminText" placeholder="Paste lesson text here..." style="width:100%; height:100px; padding:10px; margin-bottom:10px;"></textarea>
             <button onclick="saveNewLesson()" style="background:#27ae60; color:white; padding:10px;">Save Lesson</button>
-            <button onclick="localStorage.clear(); location.reload();" style="background:#c0392b; color:white; padding:10px;">Reset All Data</button>
+            <button onclick="resetData()" style="background:#c0392b; color:white; padding:10px;">Reset All Data</button>
         </div>
     </div>
 
@@ -53,11 +55,29 @@
     </div>
 
     <script>
+        let timer = null;
+        let started = false;
+        
         let data = JSON.parse(localStorage.getItem('kiratData')) || {
             "Punjabi": { "Characters": [], "Chunks": [], "Paragraphs": [], "Steno": [] },
             "English": { "Characters": [], "Chunks": [], "Paragraphs": [], "Steno": [] },
             "Hindi": { "Characters": [], "Chunks": [], "Paragraphs": [], "Steno": [] }
         };
+
+        function startTimer() {
+            if(!started) {
+                started = true;
+                let cat = document.getElementById("cat").value;
+                let timeLeft = (cat === 'Steno') ? 1500 : 600;
+                timer = setInterval(() => {
+                    timeLeft--;
+                    let m = Math.floor(timeLeft/60);
+                    let s = timeLeft % 60;
+                    document.getElementById('timer').innerText = m + ":" + (s<10?'0':'')+s;
+                    if(timeLeft <= 0) submitTest();
+                }, 1000);
+            }
+        }
 
         function loadLesson() {
             let l = document.getElementById("lang").value;
@@ -67,6 +87,13 @@
             s.innerHTML = "";
             lessons.forEach((item, i) => { s.innerHTML += `<option value="${i}">${item.name}</option>`; });
             document.getElementById("display").innerText = lessons.length > 0 ? lessons[s.value || 0].text : "No lesson found.";
+            
+            // Timer reset for display
+            let cat = document.getElementById("cat").value;
+            document.getElementById('timer').innerText = (cat === 'Steno') ? "25:00" : "10:00";
+            document.getElementById('input').value = "";
+            started = false;
+            clearInterval(timer);
         }
 
         function saveNewLesson() {
@@ -82,7 +109,12 @@
             }
         }
 
+        function resetData() {
+            if(confirm("Delete all data?")) { localStorage.removeItem('kiratData'); location.reload(); }
+        }
+
         function submitTest() {
+            clearInterval(timer);
             let origWords = document.getElementById("display").innerText.trim().split(/\s+/);
             let typedWords = document.getElementById("input").value.trim().split(/\s+/);
             let correct = 0;
