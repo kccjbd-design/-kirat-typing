@@ -13,8 +13,8 @@
         
         .stats-bar { display: flex; justify-content: space-between; background: #e8f4f8; padding: 15px 25px; border-radius: 8px; margin-bottom: 15px; font-size: 20px; font-weight: bold; border: 1px solid #bce8f1; color: #31708f; }
         .controls { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
-        select { padding: 10px; font-size: 18px; border-radius: 5px; border: 1px solid #ccc; flex: 1; }
-        #langSelect { flex: 0.3; background: #fff; font-weight: bold; color: #2c3e50; border: 2px solid #3498db; }
+        select { padding: 10px; font-size: 17px; border-radius: 5px; border: 1px solid #ccc; flex: 1; }
+        .highlight-select { background: #eef2f3; font-weight: bold; color: #2c3e50; border: 2px solid #3498db; }
         
         .display-area { font-size: 22px; padding: 15px; background: #f9f9f9; border: 1px solid #ccc; border-radius: 8px; height: 200px; overflow-y: auto; margin-bottom: 15px; line-height: 1.6; user-select: none; }
         textarea { width: 100%; height: 200px; font-size: 22px; padding: 15px; border: 2px solid #3498db; border-radius: 8px; box-sizing: border-box; resize: none; line-height: 1.6; }
@@ -44,15 +44,21 @@
         </div>
 
         <div class="controls">
-            <!-- ਭਾਸ਼ਾ ਚੁਣਨ ਵਾਲਾ ਡ੍ਰੌਪਡਾਊਨ ਵਾਪਸ ਆ ਗਿਆ ਹੈ -->
-            <select id="langSelect" onchange="changeLanguage()">
+            <!-- ਭਾਸ਼ਾ -->
+            <select id="langSelect" class="highlight-select" onchange="changeLanguage()">
                 <option value="Punjabi">Punjabi</option>
                 <option value="English">English</option>
                 <option value="Hindi">Hindi</option>
             </select>
-            <!-- ਲੈਸਨ ਚੁਣਨ ਵਾਲਾ ਡ੍ਰੌਪਡਾਊਨ -->
+            <!-- ਕੈਟਾਗਰੀ -->
+            <select id="categorySelect" class="highlight-select" onchange="changeCategory()">
+                <option value="Characters">ਅੱਖਰ ਪਹਿਚਾਣ (Characters)</option>
+                <option value="Chunks">ਛੋਟੇ ਪਹਿਰੇ (Chunks)</option>
+                <option value="Paragraphs">ਪੂਰੇ ਪਹਿਰੇ (Paragraphs)</option>
+            </select>
+            <!-- ਲੈਸਨ -->
             <select id="lessonSelect" onchange="loadLesson()"></select>
-            <button onclick="resetTest()" style="background: #f39c12;">Reset</button>
+            <button onclick="resetTest()" style="background: #f39c12; color:white; font-weight:bold; padding:10px 20px; border:none; border-radius:5px; cursor:pointer;">Reset</button>
         </div>
 
         <div id="display" class="display-area"></div>
@@ -63,39 +69,63 @@
 
         <!-- Admin Panel -->
         <div id="adminPanel">
-            <h3>🛠️ Admin Panel (ਨਵਾਂ ਲੈਸਨ ਐਡ ਕਰੋ)</h3>
-            <select id="adminLangSelect" class="admin-input">
-                <option value="Punjabi">Punjabi (ਪੰਜਾਬੀ ਵਿੱਚ ਸੇਵ ਕਰੋ)</option>
-                <option value="English">English (ਅੰਗਰੇਜ਼ੀ ਵਿੱਚ ਸੇਵ ਕਰੋ)</option>
-                <option value="Hindi">Hindi (ਹਿੰਦੀ ਵਿੱਚ ਸੇਵ ਕਰੋ)</option>
-            </select>
-            <input type="text" id="newLessonName" class="admin-input" placeholder="ਲੈਸਨ ਦਾ ਨਾਮ (ਜਿਵੇਂ: Level 4 - ਨਵਾਂ ਪਹਿਰਾ)">
-            <textarea id="newLessonText" class="admin-textarea" placeholder="ਇੱਥੇ ਨਵਾਂ ਪਹਿਰਾ ਜਾਂ ਸ਼ਬਦ ਲਿਖੋ..."></textarea>
-            <button onclick="addCustomLesson()" style="background: #27ae60;">Save Lesson</button>
-            <button onclick="clearProgress()" style="background: #c0392b; float: right;">Clear Progress</button>
+            <h3>🛠️ Admin Panel (ਨਵਾਂ ਲੈਸਨ/ਪਹਿਰਾ ਐਡ ਕਰੋ)</h3>
+            <div style="display:flex; gap:10px;">
+                <select id="adminLangSelect" class="admin-input">
+                    <option value="Punjabi">Punjabi</option>
+                    <option value="English">English</option>
+                    <option value="Hindi">Hindi</option>
+                </select>
+                <select id="adminCatSelect" class="admin-input">
+                    <option value="Characters">ਅੱਖਰ ਪਹਿਚਾਣ (Characters)</option>
+                    <option value="Chunks">ਛੋਟੇ ਪਹਿਰੇ (Chunks)</option>
+                    <option value="Paragraphs">ਪੂਰੇ ਪਹਿਰੇ (Paragraphs)</option>
+                </select>
+            </div>
+            <input type="text" id="newLessonName" class="admin-input" placeholder="ਟਾਈਟਲ (ਜਿਵੇਂ: Level 4 ਜਾਂ Chunk 1 ਜਾਂ PSSSB ਪਹਿਰਾ)">
+            <textarea id="newLessonText" class="admin-textarea" placeholder="ਇੱਥੇ ਨਵਾਂ ਪਹਿਰਾ, ਚੰਕ ਜਾਂ ਅੱਖਰ ਲਿਖੋ..."></textarea>
+            <button onclick="addCustomLesson()" style="background: #27ae60; padding:10px 20px; color:white; font-weight:bold; border:none; border-radius:5px;">Save Lesson</button>
+            <button onclick="clearProgress()" style="background: #c0392b; padding:10px 20px; color:white; font-weight:bold; border:none; border-radius:5px; float: right;">Clear Progress</button>
         </div>
     </div>
 
     <script>
         let defaultData = {
-            "Punjabi": [
-                { name: "Level 1 (ਵਿਚਕਾਰਲੀ ਲਾਈਨ)", text: "ਕ ਮ ਜ ਲ ਹ ਕਮਲ ਜਲ ਮਲ ਹਲ ਕਲ ਜਮ ਲਕ" },
-                { name: "Level 2 (ਉੱਪਰਲੀ ਲਾਈਨ)", text: "ਤ ਰ ਚ ਟ ਪ ਤਾਰਾ ਚਾਚਾ ਪਾਰਾ ਚਟ ਪਟ ਤਰ" },
-                { name: "Level 3 (ਹੇਠਲੀ ਲਾਈਨ)", text: "ਬ ਨ ਥ ਗ ਬਣ ਗਣ ਥਨ ਨਗ ਬਗ ਗਬ" }
-            ],
-            "English": [
-                { name: "Level 1 (Home Row)", text: "a s d f g h j k l ; asdf jkl;" },
-                { name: "Level 2 (Top Row)", text: "q w e r t y u i o p qwer tyui" }
-            ],
-            "Hindi": [
-                { name: "Level 1 (Basic)", text: "क म ज ल ह" }
-            ]
+            "Punjabi": {
+                "Characters": [
+                    { name: "Level 1 (ਵਿਚਕਾਰਲੀ ਲਾਈਨ)", text: "ਕ ਮ ਜ ਲ ਹ ਕਮਲ ਜਲ ਮਲ ਹਲ ਕਲ ਜਮ ਲਕ" },
+                    { name: "Level 2 (ਉੱਪਰਲੀ ਲਾਈਨ)", text: "ਤ ਰ ਚ ਟ ਪ ਤਾਰਾ ਚਾਚਾ ਪਾਰਾ ਚਟ ਪਟ ਤਰ" },
+                    { name: "Level 3 (ਹੇਠਲੀ ਲਾਈਨ)", text: "ਬ ਨ ਥ ਗ ਬਣ ਗਣ ਥਨ ਨਗ ਬਗ ਗਬ" }
+                ],
+                "Chunks": [
+                    { name: "Chunk 1 (ਬੇਸਿਕ)", text: "ਇਹ ਟਾਈਪਿੰਗ ਦਾ ਇੱਕ ਛੋਟਾ ਚੰਕ ਹੈ ਜੋ ਅਭਿਆਸ ਲਈ ਬਣਾਇਆ ਗਿਆ ਹੈ।" }
+                ],
+                "Paragraphs": [
+                    { name: "Paragraph 1 (PSSSB)", text: "ਪੰਜਾਬ ਦੇ ਇਤਿਹਾਸ ਵਿੱਚ ਬਹੁਤ ਸਾਰੇ ਮਹਾਨ ਵਿਦਵਾਨ ਹੋਏ ਹਨ ਜਿਨ੍ਹਾਂ ਨੇ ਸਾਹਿਤ ਵਿੱਚ ਆਪਣਾ ਯੋਗਦਾਨ ਪਾਇਆ ਹੈ।" }
+                ]
+            },
+            "English": {
+                "Characters": [{ name: "Level 1 (Home Row)", text: "a s d f g h j k l ; asdf jkl;" }],
+                "Chunks": [{ name: "Chunk 1", text: "The quick brown fox jumps over the lazy dog." }],
+                "Paragraphs": [{ name: "Para 1", text: "Typing is a crucial skill in the modern digital age. It helps improve productivity and efficiency." }]
+            },
+            "Hindi": {
+                "Characters": [{ name: "Level 1", text: "क म ज ल ह" }],
+                "Chunks": [{ name: "Chunk 1", text: "यह एक छोटा अभ्यास है।" }],
+                "Paragraphs": [{ name: "Para 1", text: "हिंदी भारत की एक प्रमुख भाषा है और इसका इतिहास बहुत ही समृद्ध है।" }]
+            }
         };
 
-        let lessonsData = JSON.parse(localStorage.getItem('kiratAllLessons')) || defaultData;
-        let unlockedLevels = JSON.parse(localStorage.getItem('unlockedLevels')) || { "Punjabi": 0, "English": 0, "Hindi": 0 };
+        // Using V2 keys so it doesn't clash with your old data
+        let lessonsData = JSON.parse(localStorage.getItem('kiratV2_Lessons')) || defaultData;
+        let unlockedLevels = JSON.parse(localStorage.getItem('kiratV2_Unlocked')) || {
+            "Punjabi": { "Characters": 0, "Chunks": 0, "Paragraphs": 0 },
+            "English": { "Characters": 0, "Chunks": 0, "Paragraphs": 0 },
+            "Hindi": { "Characters": 0, "Chunks": 0, "Paragraphs": 0 }
+        };
         
         let currentLang = "Punjabi";
+        let currentCat = "Characters";
         let currentMode = 'typing';
         let totalTime = 10 * 60; 
         let timeLeft = totalTime;
@@ -109,6 +139,11 @@
 
         function changeLanguage() {
             currentLang = document.getElementById("langSelect").value;
+            changeCategory();
+        }
+
+        function changeCategory() {
+            currentCat = document.getElementById("categorySelect").value;
             updateLessonDropdown();
             loadLesson();
             resetTest();
@@ -117,8 +152,8 @@
         function updateLessonDropdown() {
             let select = document.getElementById("lessonSelect");
             select.innerHTML = "";
-            let lessons = lessonsData[currentLang] || [];
-            let unlocked = unlockedLevels[currentLang] || 0;
+            let lessons = lessonsData[currentLang][currentCat] || [];
+            let unlocked = unlockedLevels[currentLang][currentCat] || 0;
 
             lessons.forEach((lesson, index) => {
                 let option = document.createElement("option");
@@ -138,12 +173,12 @@
         function loadLesson() {
             let select = document.getElementById("lessonSelect");
             if(!select.value) {
-                currentLessonText = "ਕੋਈ ਲੈਸਨ ਮੌਜੂਦ ਨਹੀਂ ਹੈ। ਐਡਮਿਨ ਪੈਨਲ ਤੋਂ ਐਡ ਕਰੋ।";
+                currentLessonText = "ਇਸ ਕੈਟਾਗਰੀ ਵਿੱਚ ਕੋਈ ਲੈਸਨ ਮੌਜੂਦ ਨਹੀਂ ਹੈ। ਐਡਮਿਨ ਪੈਨਲ ਤੋਂ ਐਡ ਕਰੋ।";
                 document.getElementById("display").innerText = currentLessonText;
                 return;
             }
             let index = select.value;
-            currentLessonText = lessonsData[currentLang][index].text;
+            currentLessonText = lessonsData[currentLang][currentCat][index].text;
             document.getElementById("display").innerText = currentLessonText;
             resetTest();
         }
@@ -194,13 +229,15 @@
             }
 
             let correctChars = 0;
-            for (let i = 0; i < typedText.length; i++) {
+            let checkLength = Math.min(typedText.length, currentLessonText.length);
+            for (let i = 0; i < checkLength; i++) {
                 if (typedText[i] === currentLessonText[i]) {
                     correctChars++;
                 }
             }
             
             let accuracy = Math.round((correctChars / typedText.length) * 100);
+            if(accuracy > 100) accuracy = 100;
             document.getElementById("accuracyDisplay").innerText = `🎯 Accuracy: ${accuracy}%`;
             return accuracy;
         }
@@ -217,18 +254,18 @@
 
             let finalAccuracy = calculateLiveAccuracy();
             let currentIndex = parseInt(document.getElementById("lessonSelect").value);
-            let unlocked = unlockedLevels[currentLang];
-            let totalLessons = lessonsData[currentLang].length;
+            let unlocked = unlockedLevels[currentLang][currentCat];
+            let totalLessons = lessonsData[currentLang][currentCat].length;
 
             if (finalAccuracy >= 98) {
                 document.getElementById("resultMsg").innerHTML = `🎉 ਸ਼ਾਨਦਾਰ! ਤੁਹਾਡੀ ਐਕਿਊਰੇਸੀ ${finalAccuracy}% ਹੈ।`;
                 if (currentIndex === unlocked && unlocked < totalLessons - 1) {
-                    unlockedLevels[currentLang]++;
-                    localStorage.setItem('unlockedLevels', JSON.stringify(unlockedLevels));
+                    unlockedLevels[currentLang][currentCat]++;
+                    localStorage.setItem('kiratV2_Unlocked', JSON.stringify(unlockedLevels));
                     document.getElementById("resultMsg").innerHTML += `<br>ਅਗਲਾ ਲੈਸਨ ਖੋਲ੍ਹ ਦਿੱਤਾ ਗਿਆ ਹੈ!`;
                     setTimeout(() => {
                         updateLessonDropdown();
-                        document.getElementById("lessonSelect").value = unlockedLevels[currentLang];
+                        document.getElementById("lessonSelect").value = unlockedLevels[currentLang][currentCat];
                         loadLesson();
                     }, 3000);
                 }
@@ -249,7 +286,7 @@
         }
 
         function toggleAdmin() {
-            let pass = prompt("ਐਡਮਿਨ ਪਾਸਵਰਡ ਭਰੋ (Password is kirat123):");
+            let pass = prompt("ਐਡਮਿਨ ਪਾਸਵਰਡ ਭਰੋ (Password: kirat123):");
             if (pass === "kirat123") {
                 let panel = document.getElementById("adminPanel");
                 panel.style.display = panel.style.display === "block" ? "none" : "block";
@@ -260,17 +297,18 @@
 
         function addCustomLesson() {
             let lang = document.getElementById("adminLangSelect").value;
+            let cat = document.getElementById("adminCatSelect").value;
             let name = document.getElementById("newLessonName").value;
             let text = document.getElementById("newLessonText").value;
             
             if (name && text) {
-                if(!lessonsData[lang]) lessonsData[lang] = [];
-                lessonsData[lang].push({ name: name, text: text });
-                localStorage.setItem('kiratAllLessons', JSON.stringify(lessonsData));
-                alert(`${lang} ਵਿੱਚ ਨਵਾਂ ਲੈਸਨ ਸੇਵ ਹੋ ਗਿਆ!`);
+                if(!lessonsData[lang][cat]) lessonsData[lang][cat] = [];
+                lessonsData[lang][cat].push({ name: name, text: text });
+                localStorage.setItem('kiratV2_Lessons', JSON.stringify(lessonsData));
+                alert(`${lang} ਦੇ ${cat} ਵਿੱਚ ਨਵਾਂ ਲੈਸਨ ਸੇਵ ਹੋ ਗਿਆ!`);
                 document.getElementById("newLessonName").value = "";
                 document.getElementById("newLessonText").value = "";
-                if(currentLang === lang) {
+                if(currentLang === lang && currentCat === cat) {
                     updateLessonDropdown();
                 }
             } else {
@@ -280,8 +318,12 @@
 
         function clearProgress() {
             if(confirm("ਕੀ ਤੁਸੀਂ ਸਾਰੇ ਬੱਚਿਆਂ ਦੀ ਪ੍ਰੋਗ੍ਰੈਸ ਰੀਸੈੱਟ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ? ਇਹ ਸਾਰੇ ਲੈਸਨ ਲੌਕ ਕਰ ਦੇਵੇਗਾ।")) {
-                unlockedLevels = { "Punjabi": 0, "English": 0, "Hindi": 0 };
-                localStorage.setItem('unlockedLevels', JSON.stringify(unlockedLevels));
+                unlockedLevels = {
+                    "Punjabi": { "Characters": 0, "Chunks": 0, "Paragraphs": 0 },
+                    "English": { "Characters": 0, "Chunks": 0, "Paragraphs": 0 },
+                    "Hindi": { "Characters": 0, "Chunks": 0, "Paragraphs": 0 }
+                };
+                localStorage.setItem('kiratV2_Unlocked', JSON.stringify(unlockedLevels));
                 updateLessonDropdown();
                 loadLesson();
                 alert("ਪ੍ਰੋਗ੍ਰੈਸ ਰੀਸੈੱਟ ਹੋ ਗਈ ਹੈ!");
