@@ -1,4 +1,169 @@
-// --- SMART ALIGNMENT LOGIC ---
+<!DOCTYPE html>
+<html lang="pa">
+<head>
+    <meta charset="UTF-8">
+    <title>Kirat Typing & Steno Lab</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f7f6; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .display-area { font-size: 24px; padding: 20px; background: #eee; min-height: 150px; margin-bottom: 10px; border-radius: 5px; line-height: 1.6; }
+        textarea { width: 100%; height: 150px; font-size: 24px; padding: 15px; box-sizing: border-box; }
+        #adminPanel { display: none; background: #fff3cd; padding: 20px; border: 2px dashed #e67e22; margin-top: 20px; border-radius: 8px; }
+        
+        /* Result Styles */
+        .res-correct { color: green; font-weight: bold; }
+        .res-wrong { color: red; font-weight: bold; }
+        .res-missing { background-color: yellow; color: black; font-weight: bold; padding: 2px; }
+        
+        #modal { display: none; position: fixed; top: 0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); }
+        .modal-content { background: white; margin: 5% auto; padding: 20px; width: 80%; border-radius: 10px; max-height: 80vh; overflow-y: auto; }
+        .admin-input { width: 100%; padding: 10px; margin-bottom: 10px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 onclick="toggleAdmin()" style="text-align:center; cursor:pointer;">⌨️ Kirat Typing & Steno Lab</h1>
+        
+        <div style="text-align:center; font-size: 24px; margin-bottom:10px; font-weight:bold;">⏱️ <span id="timer">10:00</span></div>
+
+        <div style="display:flex; gap:10px; margin-bottom:10px;">
+            <select id="lang" onchange="loadLesson()"><option value="Punjabi">Punjabi</option><option value="English">English</option><option value="Hindi">Hindi</option></select>
+            <select id="cat" onchange="loadLesson()">
+                <option value="Characters">Characters</option>
+                <option value="Chunks">Chunks</option>
+                <option value="Paragraphs">Paragraphs</option>
+                <option value="Steno">Steno</option>
+            </select>
+            <select id="lessonSelect" onchange="loadLesson()"></select>
+        </div>
+        
+        <div id="display" class="display-area"></div>
+        <textarea id="input" oninput="startTimer()" placeholder="ਇੱਥੇ ਟਾਈਪ ਕਰੋ..."></textarea>
+        <button onclick="submitTest()" style="width:100%; padding:15px; margin-top:10px; background:#e74c3c; color:white; font-size:18px;">Submit Test</button>
+
+        <div id="adminPanel">
+            <h3>🛠️ Admin Panel</h3>
+            <select id="editList" onchange="loadEditData()" class="admin-input">
+                <option value="">Select Lesson to Edit/Delete</option>
+            </select>
+            <hr>
+            <select id="adminCat" class="admin-input">
+                <option value="Characters">Characters</option><option value="Chunks">Chunks</option><option value="Paragraphs">Paragraphs</option><option value="Steno">Steno</option>
+            </select>
+            <input type="text" id="adminName" class="admin-input" placeholder="Lesson Name">
+            <input type="text" id="adminAudioUrl" class="admin-input" placeholder="Audio URL (Optional)">
+            <label><strong>Select Local Recording:</strong></label>
+            <input type="file" id="adminFile" accept="audio/*" class="admin-input">
+            <textarea id="adminText" class="admin-input" placeholder="Paste Transcript here..."></textarea>
+            
+            <button onclick="saveOrUpdateLesson()" style="background:#27ae60; color:white; padding:10px;">Save / Update Lesson</button>
+            <button onclick="deleteLesson()" style="background:#c0392b; color:white; padding:10px;">Delete Selected</button>
+            <button onclick="resetData()" style="background:#333; color:white; padding:10px;">Reset All</button>
+        </div>
+    </div>
+
+    <div id="modal">
+        <div class="modal-content">
+            <h2>Result Report</h2>
+            <p id="resAccuracy" style="font-weight:bold; font-size:20px;"></p>
+            <p id="resDisplay" style="line-height:2.5; font-size:20px;"></p>
+            <button onclick="document.getElementById('modal').style.display='none'" style="padding:10px 20px;">Close</button>
+        </div>
+    </div>
+
+    <script>
+        let timer = null; let started = false;
+        let data = JSON.parse(localStorage.getItem('kiratData')) || {
+            "Punjabi": { "Characters": [], "Chunks": [], "Paragraphs": [], "Steno": [] },
+            "English": { "Characters": [], "Chunks": [], "Paragraphs": [], "Steno": [] },
+            "Hindi": { "Characters": [], "Chunks": [], "Paragraphs": [], "Steno": [] }
+        };
+
+        function startTimer() {
+            if(!started) {
+                started = true;
+                let cat = document.getElementById("cat").value;
+                let timeLeft = (cat === 'Steno') ? 1500 : 600;
+                timer = setInterval(() => {
+                    timeLeft--;
+                    let m = Math.floor(timeLeft/60);
+                    let s = timeLeft % 60;
+                    document.getElementById('timer').innerText = m + ":" + (s<10?'0':'')+s;
+                    if(timeLeft <= 0) submitTest();
+                }, 1000);
+            }
+        }
+
+        function loadLesson() {
+            let l = document.getElementById("lang").value;
+            let c = document.getElementById("cat").value;
+            let s = document.getElementById("lessonSelect");
+            let display = document.getElementById("display");
+            let lessons = data[l][c] || [];
+            s.innerHTML = "";
+            lessons.forEach((item, i) => { s.innerHTML += `<option value="${i}">${item.name}</option>`; });
+            display.innerHTML = "";
+            if(lessons.length > 0) {
+                let current = lessons[s.value || 0];
+                if(current.audioUrl) { display.innerHTML += `<audio controls src="${current.audioUrl}" style="width:100%"></audio><br>`; }
+                if (c === 'Steno') { display.innerHTML += `<div style="text-align:center; padding: 20px; color:#888; font-style:italic;">[ਟੈਕਸਟ ਲੁਕਾਇਆ ਗਿਆ ਹੈ - ਸਿਰਫ ਆਡੀਓ ਸੁਣੋ]</div>`; }
+                else { display.innerHTML += current.text; }
+            } else { display.innerText = "No lesson found."; }
+            document.getElementById('timer').innerText = (c === 'Steno') ? "25:00" : "10:00";
+            document.getElementById('input').value = "";
+            started = false; clearInterval(timer);
+            updateEditList();
+        }
+
+        function updateEditList() {
+            let editList = document.getElementById("editList");
+            editList.innerHTML = '<option value="">Select Lesson to Edit/Delete</option>';
+            let l = document.getElementById("lang").value;
+            Object.keys(data[l]).forEach(cat => {
+                data[l][cat].forEach((item, i) => { editList.innerHTML += `<option value="${cat}|${i}">${cat} > ${item.name}</option>`; });
+            });
+        }
+
+        function loadEditData() {
+            let val = document.getElementById("editList").value;
+            if(!val) return;
+            let [cat, index] = val.split("|");
+            let l = document.getElementById("lang").value;
+            let item = data[l][cat][index];
+            document.getElementById("adminCat").value = cat;
+            document.getElementById("adminName").value = item.name;
+            document.getElementById("adminAudioUrl").value = item.audioUrl || "";
+            document.getElementById("adminText").value = item.text;
+        }
+
+        function saveOrUpdateLesson() {
+            let l = document.getElementById("lang").value;
+            let c = document.getElementById("adminCat").value;
+            let name = document.getElementById("adminName").value;
+            let text = document.getElementById("adminText").value;
+            let audioUrl = document.getElementById("adminAudioUrl").value;
+            let fileInput = document.getElementById("adminFile");
+            if (fileInput.files.length > 0) audioUrl = URL.createObjectURL(fileInput.files[0]);
+            let editVal = document.getElementById("editList").value;
+            if(editVal) { let [oldCat, index] = editVal.split("|"); data[l][oldCat].splice(index, 1); }
+            data[l][c].push({name: name, audioUrl: audioUrl, text: text});
+            localStorage.setItem('kiratData', JSON.stringify(data));
+            alert("Saved/Updated!"); loadLesson();
+        }
+
+        function deleteLesson() {
+            let val = document.getElementById("editList").value;
+            if(!val) return;
+            let [cat, index] = val.split("|");
+            let l = document.getElementById("lang").value;
+            data[l][cat].splice(index, 1);
+            localStorage.setItem('kiratData', JSON.stringify(data));
+            alert("Deleted!"); loadLesson();
+        }
+
+        function resetData() { if(confirm("Delete all?")) { localStorage.removeItem('kiratData'); location.reload(); } }
+
+        // --- UPDATED SMART ALIGNMENT LOGIC ---
         function submitTest() {
             clearInterval(timer);
             let l = document.getElementById("lang").value;
@@ -10,8 +175,8 @@
             let typedWords = document.getElementById("input").value.trim().split(/\s+/);
             
             let resDisplayHtml = "";
-            let oIdx = 0; // Original Word Index
-            let tIdx = 0; // Typed Word Index
+            let oIdx = 0;
+            let tIdx = 0;
             let correctCount = 0;
 
             while (oIdx < origWords.length || tIdx < typedWords.length) {
@@ -19,37 +184,25 @@
                 let t = typedWords[tIdx];
 
                 if (o !== undefined && t !== undefined && o === t) {
-                    // ਸਹੀ ਸ਼ਬਦ (Perfect Match)
                     resDisplayHtml += `<span class="res-correct">${o}</span> `;
                     correctCount++;
+                    oIdx++; tIdx++;
+                } else if (t === undefined && o !== undefined) {
+                    resDisplayHtml += `<span class="res-missing">${o}</span> `;
                     oIdx++;
+                } else if (o === undefined && t !== undefined) {
+                    resDisplayHtml += `<span class="res-wrong">${t}</span> `;
                     tIdx++;
                 } else {
-                    // Mismatch: Check for Extra or Missing to Re-sync
-                    if (o === undefined) {
-                        // ਵਾਧੂ ਸ਼ਬਦ (Extra word typed)
+                    if (t === origWords[oIdx + 1]) {
+                        resDisplayHtml += `<span class="res-missing">${o}</span> `;
+                        oIdx++; 
+                    } else if (typedWords[tIdx + 1] === o) {
                         resDisplayHtml += `<span class="res-wrong">${t}</span> `;
                         tIdx++;
-                    } else if (t === undefined) {
-                        // ਸ਼ਬਦ ਮਿਸ ਹੋ ਗਿਆ (Missing word)
-                        resDisplayHtml += `<span class="res-missing">${o}</span> `;
-                        oIdx++;
                     } else {
-                        // ਕੋਈ ਗਲਤੀ ਹੈ, ਦੇਖੋ ਕਿ ਕੀ ਅਗਲੇ ਸ਼ਬਦ ਨਾਲ Sync ਹੋ ਸਕਦਾ ਹੈ
-                        if (t === origWords[oIdx + 1]) {
-                            // ਯੂਜ਼ਰ ਨੇ ਵਰਤਮਾਨ ਸ਼ਬਦ ਛੱਡ ਦਿੱਤਾ (Missing)
-                            resDisplayHtml += `<span class="res-missing">${o}</span> `;
-                            oIdx++;
-                        } else if (typedWords[tIdx + 1] === o) {
-                            // ਯੂਜ਼ਰ ਨੇ ਫਾਲਤੂ ਸ਼ਬਦ ਲਿਖਿਆ (Extra)
-                            resDisplayHtml += `<span class="res-wrong">${t}</span> `;
-                            tIdx++;
-                        } else {
-                            // ਸਧਾਰਨ ਗਲਤ ਸ਼ਬਦ (Wrong word)
-                            resDisplayHtml += `<span class="res-wrong">${t}</span> <span class="res-correct">(${o})</span> `;
-                            oIdx++;
-                            tIdx++;
-                        }
+                        resDisplayHtml += `<span class="res-wrong">${t || ""}</span> <span class="res-correct">(${o})</span> `;
+                        oIdx++; tIdx++;
                     }
                 }
             }
@@ -59,3 +212,15 @@
             document.getElementById("resDisplay").innerHTML = resDisplayHtml;
             document.getElementById("modal").style.display = "block";
         }
+
+        function toggleAdmin() {
+            let p = prompt("Admin Password:");
+            if (p === "kirat123") {
+                let panel = document.getElementById("adminPanel");
+                panel.style.display = (panel.style.display === "block") ? "none" : "block";
+            }
+        }
+        window.onload = loadLesson;
+    </script>
+</body>
+</html>
