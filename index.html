@@ -12,6 +12,10 @@
         .btn-active { background: #27ae60 !important; color: white; }
         .display-area { font-size: 22px; padding: 15px; background: #eee; min-height: 150px; margin-bottom: 10px; border-radius: 5px; line-height: 1.6; }
         textarea { width: 100%; height: 150px; font-size: 22px; padding: 10px; box-sizing: border-box; }
+        
+        /* Admin Panel Styles */
+        #adminPanel { display: none; background: #fff3cd; padding: 20px; border: 2px dashed #e67e22; margin-top: 20px; border-radius: 8px; }
+        
         #modal { display: none; position: fixed; top: 0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); }
         .modal-content { background: white; margin: 5% auto; padding: 20px; width: 80%; border-radius: 10px; max-height: 80vh; overflow-y: auto; }
         .err { color: red; text-decoration: underline; font-weight: bold; }
@@ -37,6 +41,12 @@
         <div id="display" class="display-area"></div>
         <textarea id="input" oninput="startTimer()" placeholder="ਇੱਥੇ ਟਾਈਪ ਕਰੋ..."></textarea>
         <button onclick="submitTest()" style="width:100%; padding:15px; margin-top:10px; background:#e74c3c; color:white; font-size:18px;">Submit Test</button>
+
+        <!-- Admin Panel Section -->
+        <div id="adminPanel">
+            <h3>🛠️ Admin Panel</h3>
+            <p>Admin tools are now active.</p>
+        </div>
     </div>
 
     <div id="modal">
@@ -124,8 +134,13 @@
         }
 
         function toggleAdmin() {
-            let p = prompt("Admin Password:");
-            if(p === "kirat123") alert("Admin mode unlocked (Add/Edit logic can be integrated here)");
+            let p = prompt("Enter Admin Password:");
+            if (p === "kirat123") {
+                let panel = document.getElementById("adminPanel");
+                panel.style.display = (panel.style.display === "block") ? "none" : "block";
+            } else if (p !== null) {
+                alert("Incorrect password!");
+            }
         }
 
         window.onload = loadLesson;
