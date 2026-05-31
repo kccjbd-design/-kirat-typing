@@ -11,8 +11,8 @@
         #adminPanel { display: none; background: #fff3cd; padding: 20px; border: 2px dashed #e67e22; margin-top: 20px; border-radius: 8px; }
         .err { color: red; text-decoration: underline; font-weight: bold; }
         #modal { display: none; position: fixed; top: 0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); }
-        .modal-content { background: white; margin: 10% auto; padding: 20px; width: 80%; border-radius: 10px; }
-        .admin-select { width: 100%; padding: 10px; margin-bottom: 10px; }
+        .modal-content { background: white; margin: 5% auto; padding: 20px; width: 80%; border-radius: 10px; }
+        .admin-input { width: 100%; padding: 10px; margin-bottom: 10px; box-sizing: border-box; }
     </style>
 </head>
 <body>
@@ -37,17 +37,20 @@
         <button onclick="submitTest()" style="width:100%; padding:15px; margin-top:10px; background:#e74c3c; color:white; font-size:18px;">Submit Test</button>
 
         <div id="adminPanel">
-            <h3>🛠️ Add New Lesson (Manual)</h3>
-            <select id="adminCat" class="admin-select">
+            <h3>🛠️ Add New Lesson</h3>
+            <select id="adminCat" class="admin-input">
                 <option value="Characters">Characters</option>
                 <option value="Chunks">Chunks</option>
                 <option value="Paragraphs">Paragraphs</option>
                 <option value="Steno">Steno</option>
             </select>
-            <input type="text" id="adminName" placeholder="Lesson Name" style="width:100%; padding:10px; margin-bottom:10px;">
-            <textarea id="adminText" placeholder="Paste text here..." style="width:100%; height:100px; padding:10px; margin-bottom:10px;"></textarea>
+            <input type="text" id="adminName" class="admin-input" placeholder="Lesson Name">
+            <input type="text" id="adminAudioUrl" class="admin-input" placeholder="Audio URL (Optional)">
+            <label>Or Browse Local Audio:</label>
+            <input type="file" id="adminFile" accept="audio/*" class="admin-input">
+            <textarea id="adminText" class="admin-input" placeholder="Paste Transcript here..."></textarea>
             <button onclick="saveNewLesson()" style="background:#27ae60; color:white; padding:10px;">Save Lesson</button>
-            <button onclick="resetData()" style="background:#c0392b; color:white; padding:10px;">Reset All Data</button>
+            <button onclick="resetData()" style="background:#c0392b; color:white; padding:10px;">Reset All</button>
         </div>
     </div>
 
@@ -55,15 +58,14 @@
         <div class="modal-content">
             <h2>Result Report</h2>
             <p id="resAccuracy" style="font-weight:bold; font-size:20px;"></p>
-            <p><strong>Original Text:</strong> <span id="resOrig"></span></p>
-            <p><strong>Your Input:</strong> <span id="resTyped"></span></p>
+            <p><strong>Original:</strong> <span id="resOrig"></span></p>
+            <p><strong>Input:</strong> <span id="resTyped"></span></p>
             <button onclick="document.getElementById('modal').style.display='none'" style="padding:10px 20px;">Close</button>
         </div>
     </div>
 
     <script>
-        let timer = null;
-        let started = false;
+        let timer = null; let started = false;
         let data = JSON.parse(localStorage.getItem('kiratData')) || {
             "Punjabi": { "Characters": [], "Chunks": [], "Paragraphs": [], "Steno": [] },
             "English": { "Characters": [], "Chunks": [], "Paragraphs": [], "Steno": [] },
@@ -92,51 +94,63 @@
             let lessons = data[l][c] || [];
             s.innerHTML = "";
             lessons.forEach((item, i) => { s.innerHTML += `<option value="${i}">${item.name}</option>`; });
-            document.getElementById("display").innerText = lessons.length > 0 ? lessons[s.value || 0].text : "No lesson found.";
             
-            let cat = document.getElementById("cat").value;
-            document.getElementById('timer').innerText = (cat === 'Steno') ? "25:00" : "10:00";
+            let display = document.getElementById("display");
+            display.innerHTML = "";
+            
+            if(lessons.length > 0) {
+                let current = lessons[s.value || 0];
+                if(current.audioUrl) {
+                    display.innerHTML += `<audio controls src="${current.audioUrl}" style="width:100%"></audio><br>`;
+                }
+                display.innerHTML += current.text;
+            } else {
+                display.innerText = "No lesson found.";
+            }
+            
+            document.getElementById('timer').innerText = (c === 'Steno') ? "25:00" : "10:00";
             document.getElementById('input').value = "";
-            started = false;
-            clearInterval(timer);
+            started = false; clearInterval(timer);
         }
 
         function saveNewLesson() {
             let l = document.getElementById("lang").value;
-            let c = document.getElementById("adminCat").value; // Added correct category selector
+            let c = document.getElementById("adminCat").value;
             let name = document.getElementById("adminName").value;
             let text = document.getElementById("adminText").value;
+            let audioUrl = document.getElementById("adminAudioUrl").value;
+            
+            // Handle Local File
+            let fileInput = document.getElementById("adminFile");
+            if (fileInput.files.length > 0) {
+                audioUrl = URL.createObjectURL(fileInput.files[0]);
+            }
+
             if(name && text) {
-                data[l][c].push({name: name, text: text});
+                data[l][c].push({name: name, audioUrl: audioUrl, text: text});
                 localStorage.setItem('kiratData', JSON.stringify(data));
-                alert("Saved to " + c + "!");
-                loadLesson();
+                alert("Saved!"); loadLesson();
             }
         }
 
-        function resetData() {
-            if(confirm("Delete all data?")) { localStorage.removeItem('kiratData'); location.reload(); }
-        }
+        function resetData() { if(confirm("Delete all?")) { localStorage.removeItem('kiratData'); location.reload(); } }
 
         function submitTest() {
             clearInterval(timer);
-            let origWords = document.getElementById("display").innerText.trim().split(/\s+/);
+            let displayContent = document.getElementById("display").innerText;
+            let origWords = displayContent.trim().split(/\s+/);
             let typedWords = document.getElementById("input").value.trim().split(/\s+/);
             let correct = 0;
             let resTypedHtml = "";
 
             origWords.forEach((word, i) => {
-                if(typedWords[i] === word) {
-                    correct++;
-                    resTypedHtml += word + " ";
-                } else {
-                    resTypedHtml += `<span class="err">${typedWords[i] || ""}</span> `;
-                }
+                if(typedWords[i] === word) { correct++; resTypedHtml += word + " "; } 
+                else { resTypedHtml += `<span class="err">${typedWords[i] || ""}</span> `; }
             });
 
             let acc = Math.round((correct / origWords.length) * 100);
             document.getElementById("resAccuracy").innerText = "Accuracy: " + (isNaN(acc) ? 0 : acc) + "%";
-            document.getElementById("resOrig").innerText = origWords.join(" ");
+            document.getElementById("resOrig").innerText = displayContent;
             document.getElementById("resTyped").innerHTML = resTypedHtml;
             document.getElementById("modal").style.display = "block";
         }
@@ -148,7 +162,6 @@
                 panel.style.display = (panel.style.display === "block") ? "none" : "block";
             }
         }
-
         window.onload = loadLesson;
     </script>
 </body>
