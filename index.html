@@ -3,89 +3,61 @@ function submitTest() {
     let l = document.getElementById("lang").value;
     let c = document.getElementById("cat").value;
     let s = document.getElementById("lessonSelect");
+    
+    // Safety check if data exists
+    if (!data[l] || !data[l][c] || !data[l][c][s.value]) return;
+    
     let currentText = data[l][c][s.value].text;
-
     let origWords = currentText.trim().split(/\s+/);
     let typedWords = document.getElementById("input").value.trim().split(/\s+/);
-
+    
     let resDisplayHtml = "";
     let stats = { correct: 0, wrong: 0, missing: 0, extra: 0 };
-    let oIdx = 0; 
-    let tIdx = 0;
 
-    // Alignment Loop
-    while (oIdx < origWords.length || tIdx < typedWords.length) {
-        let o = origWords[oIdx];
-        let t = typedWords[tIdx];
+    // Linear Comparison: Compare word by word without "re-syncing"
+    // This prevents the cascading error effect seen in screenshots
+    let maxLength = Math.max(origWords.length, typedWords.length);
 
-        // 1. ਜੇ ਸ਼ਬਦ ਬਿਲਕੁਲ ਸਹੀ ਹੈ
-        if (o !== undefined && t !== undefined && o === t) {
-            resDisplayHtml += `<span class="res-correct">${t}</span> `;
-            stats.correct++;
-            oIdx++; tIdx++;
-        }
-        // 2. ਜੇ ਟਾਈਪ ਕੀਤਾ ਸ਼ਬਦ ਖਤਮ ਹੋ ਗਿਆ ਪਰ ਅਸਲ ਵਿੱਚ ਸ਼ਬਦ ਬਚੇ ਹਨ (Missing words)
-        else if (t === undefined) {
-            resDisplayHtml += `<span class="res-missing">${o}</span> `;
+    for (let i = 0; i < maxLength; i++) {
+        let o = origWords[i];
+        let t = typedWords[i];
+
+        if (t === undefined) {
+            // Missing word
+            resDisplayHtml += `<span style="background:yellow; font-weight:bold; color:black;">${o}</span> `;
             stats.missing++;
-            oIdx++;
-        }
-        // 3. ਜੇ ਅਸਲ ਟੈਕਸਟ ਖਤਮ ਹੋ ਗਿਆ ਪਰ ਤੁਸੀਂ ਵਾਧੂ ਟਾਈਪ ਕੀਤਾ ਹੈ (Extra words)
-        else if (o === undefined) {
-            resDisplayHtml += `<span class="res-wrong">${t}</span> `;
+        } else if (o === undefined) {
+            // Extra word
+            resDisplayHtml += `<span style="color:blue; font-weight:bold;">${t}</span> `;
             stats.extra++;
-            tIdx++;
-        }
-        // 4. ਮੇਲ ਨਹੀਂ ਖਾਂਦਾ (Mismatch: ਹੋ ਸਕਦਾ ਹੈ ਗਲਤ ਟਾਈਪ ਕੀਤਾ ਹੋਵੇ ਜਾਂ ਕੋਈ ਸ਼ਬਦ ਛੱਡ ਦਿੱਤਾ ਹੋਵੇ)
-        else {
-            // Check: ਕੀ ਇਹ ਸ਼ਬਦ ਸਿਰਫ ਗਲਤ (Typo) ਹੈ?
-            // ਅਸੀਂ ਦੇਖਦੇ ਹਾਂ ਕਿ ਕੀ ਅਗਲਾ ਸ਼ਬਦ ਮੈਚ ਕਰਦਾ ਹੈ
-            if (typedWords[tIdx + 1] === origWords[oIdx + 1]) {
-                // ਇਹ ਸਿਰਫ ਇੱਕ ਗਲਤ ਸ਼ਬਦ (Typo) ਹੈ
-                resDisplayHtml += `<span class="res-wrong">${t}</span> `;
-                stats.wrong++;
-                oIdx++; tIdx++;
-            }
-            // Check: ਕੀ ਯੂਜ਼ਰ ਨੇ ਕੋਈ ਸ਼ਬਦ ਛੱਡ ਦਿੱਤਾ ਹੈ (Missing)?
-            else if (t === origWords[oIdx + 1]) {
-                resDisplayHtml += `<span class="res-missing">${o}</span> `;
-                stats.missing++;
-                oIdx++;
-            }
-            // Check: ਕੀ ਯੂਜ਼ਰ ਨੇ ਕੋਈ ਸ਼ਬਦ ਵਾਧੂ ਲਿਖ ਦਿੱਤਾ ਹੈ (Extra)?
-            else if (typedWords[tIdx + 1] === o) {
-                resDisplayHtml += `<span class="res-wrong">${t}</span> `;
-                stats.extra++;
-                tIdx++;
-            }
-            // ਜੇ ਕੁਝ ਵੀ ਸਮਝ ਨਾ ਆਵੇ ਤਾਂ ਸਿਰਫ ਗਲਤ ਮਾਰਕ ਕਰੋ
-            else {
-                resDisplayHtml += `<span class="res-wrong">${t}</span> `;
-                stats.wrong++;
-                oIdx++; tIdx++;
-            }
+        } else if (o === t) {
+            // Correct
+            resDisplayHtml += `<span style="color:green; font-weight:bold;">${t}</span> `;
+            stats.correct++;
+        } else {
+            // Wrong word (Mismatch)
+            resDisplayHtml += `<span style="color:red; font-weight:bold; text-decoration:underline;">${t}</span> `;
+            stats.wrong++;
         }
     }
 
-    // Accuracy calculation
-    let totalWords = origWords.length;
-    let acc = Math.round((stats.correct / totalWords) * 100);
-    if (isNaN(acc)) acc = 0;
+    // Accuracy Calculation
+    let acc = Math.round((stats.correct / origWords.length) * 100);
+    if(isNaN(acc)) acc = 0;
 
-    // Report Summary Display
-    let summary = `
-        <div style="text-align:left; background:#fff; padding:15px; border-radius:8px; border:1px solid #ddd;">
-            <h2 style="margin-top:0;">Result Report</h2>
-            <p style="font-size:22px; font-weight:bold;">Accuracy: ${acc}%</p>
-            <p style="color:green;">✅ ਸਹੀ ਸ਼ਬਦ (Correct): <b>${stats.correct}</b></p>
-            <p style="color:red;">❌ ਗਲਤ ਸ਼ਬਦ (Wrong/Typo): <b>${stats.wrong}</b></p>
-            <p style="background:yellow; padding:5px;">⚠️ ਛੱਡੇ ਗਏ ਸ਼ਬਦ (Missing): <b>${stats.missing}</b></p>
-            <p style="color:blue;">➕ ਵਾਧੂ ਸ਼ਬਦ (Extra): <b>${stats.extra}</b></p>
+    // Report Summary
+    let statsHtml = `
+        <div style="border:1px solid #ccc; padding:15px; margin-bottom:15px; border-radius:10px; background:#f9f9f9; line-height:1.8;">
+            <h3 style="margin-top:0;">📊 ਰਿਜ਼ਲਟ ਰਿਪੋਰਟ</h3>
+            <p style="font-size:20px;">Accuracy: <strong>${acc}%</strong></p>
+            <p style="color:green; margin:2px;">✅ ਸਹੀ (Correct): <b>${stats.correct}</b></p>
+            <p style="color:red; margin:2px;">❌ ਗਲਤ (Wrong): <b>${stats.wrong}</b></p>
+            <p style="background:yellow; display:inline-block; padding:0 5px; margin:2px;">⚠️ ਛੱਡੇ ਗਏ (Missing): <b>${stats.missing}</b></p>
+            <p style="color:blue; margin:2px;">➕ ਵਾਧੂ (Extra): <b>${stats.extra}</b></p>
         </div>
-        <hr>
     `;
 
-    document.getElementById("resAccuracy").innerHTML = summary;
+    document.getElementById("resAccuracy").innerHTML = statsHtml;
     document.getElementById("resDisplay").innerHTML = resDisplayHtml;
     document.getElementById("modal").style.display = "block";
 }
