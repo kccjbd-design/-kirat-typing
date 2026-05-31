@@ -6,23 +6,18 @@
     <style>
         body { font-family: sans-serif; background: #f4f7f6; padding: 20px; }
         .container { max-width: 1000px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        .display-area { font-size: 22px; padding: 15px; background: #eee; min-height: 150px; margin-bottom: 10px; border-radius: 5px; line-height: 1.6; }
-        textarea { width: 100%; height: 150px; font-size: 22px; padding: 10px; box-sizing: border-box; }
-        
+        .display-area { font-size: 24px; padding: 20px; background: #eee; min-height: 150px; margin-bottom: 10px; border-radius: 5px; line-height: 1.6; }
+        textarea { width: 100%; height: 150px; font-size: 24px; padding: 15px; box-sizing: border-box; }
         #adminPanel { display: none; background: #fff3cd; padding: 20px; border: 2px dashed #e67e22; margin-top: 20px; border-radius: 8px; }
-        .admin-input { width: 100%; margin-bottom: 10px; padding: 10px; box-sizing: border-box; }
-        
-        #modal { display: none; position: fixed; top: 0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); }
-        .modal-content { background: white; margin: 5% auto; padding: 20px; width: 80%; border-radius: 10px; max-height: 80vh; overflow-y: auto; }
         .err { color: red; text-decoration: underline; font-weight: bold; }
+        #modal { display: none; position: fixed; top: 0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); }
+        .modal-content { background: white; margin: 10% auto; padding: 20px; width: 80%; border-radius: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1 onclick="toggleAdmin()" style="text-align:center; cursor:pointer;">⌨️ Kirat Typing & Steno Lab</h1>
         
-        <div style="text-align:center; font-size: 24px; margin-bottom:10px; font-weight:bold;">⏱️ <span id="timer">10:00</span></div>
-
         <div style="display:flex; gap:10px; margin-bottom:10px;">
             <select id="lang" onchange="loadLesson()"><option value="Punjabi">Punjabi</option><option value="English">English</option><option value="Hindi">Hindi</option></select>
             <select id="cat" onchange="loadLesson()">
@@ -35,20 +30,15 @@
         </div>
         
         <div id="display" class="display-area"></div>
-        <textarea id="input" oninput="startTimer()" placeholder="ਇੱਥੇ ਟਾਈਪ ਕਰੋ..."></textarea>
+        <textarea id="input" placeholder="ਇੱਥੇ ਟਾਈਪ ਕਰੋ..."></textarea>
         <button onclick="submitTest()" style="width:100%; padding:15px; margin-top:10px; background:#e74c3c; color:white; font-size:18px;">Submit Test</button>
 
         <div id="adminPanel">
-            <h3>🛠️ Add New Lesson (Manual/Audio)</h3>
-            <input type="text" id="adminName" class="admin-input" placeholder="Lesson Name">
-            <select id="adminType" class="admin-input" onchange="toggleAdminFields()">
-                <option value="text">Text Only (Typing)</option>
-                <option value="audio">Audio Dictation (Steno)</option>
-            </select>
-            <input type="text" id="adminAudioUrl" class="admin-input" placeholder="Audio URL (Google Drive/Other)" style="display:none;">
-            <textarea id="adminText" class="admin-input" placeholder="Lesson/Dictation Transcript..."></textarea>
+            <h3>🛠️ Add New Lesson (Manual)</h3>
+            <input type="text" id="adminName" placeholder="Lesson Name" style="width:100%; padding:10px; margin-bottom:10px;">
+            <textarea id="adminText" placeholder="Paste text here..." style="width:100%; height:100px; padding:10px; margin-bottom:10px;"></textarea>
             <button onclick="saveNewLesson()" style="background:#27ae60; color:white; padding:10px;">Save Lesson</button>
-            <button onclick="resetData()" style="background:#c0392b; color:white; padding:10px;">Reset All</button>
+            <button onclick="localStorage.clear(); location.reload();" style="background:#c0392b; color:white; padding:10px;">Reset All Data</button>
         </div>
     </div>
 
@@ -56,42 +46,18 @@
         <div class="modal-content">
             <h2>Result Report</h2>
             <p id="resAccuracy" style="font-weight:bold; font-size:20px;"></p>
-            <p><strong>Original:</strong><br><span id="resOrig"></span></p>
-            <p><strong>Input:</strong><br><span id="resTyped"></span></p>
+            <p><strong>Original Text:</strong> <span id="resOrig"></span></p>
+            <p><strong>Your Input:</strong> <span id="resTyped"></span></p>
             <button onclick="document.getElementById('modal').style.display='none'" style="padding:10px 20px;">Close</button>
         </div>
     </div>
 
     <script>
-        let timeLeft = 600;
-        let timer = null;
-        let started = false;
-        
         let data = JSON.parse(localStorage.getItem('kiratData')) || {
             "Punjabi": { "Characters": [], "Chunks": [], "Paragraphs": [], "Steno": [] },
             "English": { "Characters": [], "Chunks": [], "Paragraphs": [], "Steno": [] },
             "Hindi": { "Characters": [], "Chunks": [], "Paragraphs": [], "Steno": [] }
         };
-
-        function toggleAdminFields() {
-            let type = document.getElementById("adminType").value;
-            document.getElementById("adminAudioUrl").style.display = (type === 'audio') ? 'block' : 'none';
-        }
-
-        function startTimer() {
-            if(!started) {
-                let cat = document.getElementById("cat").value;
-                timeLeft = (cat === 'Steno') ? 1500 : 600;
-                started = true;
-                timer = setInterval(() => {
-                    timeLeft--;
-                    let m = Math.floor(timeLeft/60);
-                    let s = timeLeft % 60;
-                    document.getElementById('timer').innerText = m + ":" + (s<10?'0':'')+s;
-                    if(timeLeft <= 0) submitTest();
-                }, 1000);
-            }
-        }
 
         function loadLesson() {
             let l = document.getElementById("lang").value;
@@ -100,75 +66,46 @@
             let lessons = data[l][c] || [];
             s.innerHTML = "";
             lessons.forEach((item, i) => { s.innerHTML += `<option value="${i}">${item.name}</option>`; });
-            
-            let display = document.getElementById("display");
-            display.innerHTML = "";
-            
-            if(lessons.length > 0) {
-                let current = lessons[s.value];
-                if(current.type === 'audio') {
-                    display.innerHTML = `<strong>🔊 Dictation:</strong><br><audio controls src="${current.audioUrl}" style="width:100%"></audio><br><br>${current.text}`;
-                } else {
-                    display.innerText = current.text;
-                }
-            } else {
-                display.innerText = "No lesson found.";
-            }
-            resetTest();
+            document.getElementById("display").innerText = lessons.length > 0 ? lessons[s.value || 0].text : "No lesson found.";
         }
 
         function saveNewLesson() {
             let l = document.getElementById("lang").value;
             let c = document.getElementById("cat").value;
             let name = document.getElementById("adminName").value;
-            let type = document.getElementById("adminType").value;
-            let audioUrl = document.getElementById("adminAudioUrl").value;
             let text = document.getElementById("adminText").value;
-            
             if(name && text) {
-                data[l][c].push({name: name, type: type, audioUrl: audioUrl, text: text});
+                data[l][c].push({name: name, text: text});
                 localStorage.setItem('kiratData', JSON.stringify(data));
                 alert("Saved!");
                 loadLesson();
             }
         }
 
-        function resetData() {
-            if(confirm("Delete all?")) { localStorage.removeItem('kiratData'); location.reload(); }
-        }
-
-        function resetTest() {
-            clearInterval(timer);
-            started = false;
-            let cat = document.getElementById("cat").value;
-            document.getElementById('input').value = "";
-            document.getElementById('timer').innerText = (cat === 'Steno') ? "25:00" : "10:00";
-        }
-
         function submitTest() {
-            clearInterval(timer);
-            let displayElem = document.getElementById("display");
-            let origText = (displayElem.querySelector('audio')) ? displayElem.innerText.replace("🔊 Dictation:", "").trim() : displayElem.innerText;
-            
-            let orig = origText.split(" ");
-            let typed = document.getElementById("input").value.trim().split(" ");
+            let origWords = document.getElementById("display").innerText.trim().split(/\s+/);
+            let typedWords = document.getElementById("input").value.trim().split(/\s+/);
             let correct = 0;
             let resTypedHtml = "";
 
-            orig.forEach((word, i) => {
-                if(typed[i] === word) { correct++; resTypedHtml += word + " "; } 
-                else { resTypedHtml += `<span class="err">${typed[i] || "---"}</span> `; }
+            origWords.forEach((word, i) => {
+                if(typedWords[i] === word) {
+                    correct++;
+                    resTypedHtml += word + " ";
+                } else {
+                    resTypedHtml += `<span class="err">${typedWords[i] || ""}</span> `;
+                }
             });
 
-            let acc = Math.round((correct / orig.length) * 100);
-            document.getElementById("resAccuracy").innerText = "Accuracy: " + acc + "%";
-            document.getElementById("resOrig").innerText = origText;
+            let acc = Math.round((correct / origWords.length) * 100);
+            document.getElementById("resAccuracy").innerText = "Accuracy: " + (isNaN(acc) ? 0 : acc) + "%";
+            document.getElementById("resOrig").innerText = origWords.join(" ");
             document.getElementById("resTyped").innerHTML = resTypedHtml;
             document.getElementById("modal").style.display = "block";
         }
 
         function toggleAdmin() {
-            let p = prompt("Enter Admin Password:");
+            let p = prompt("Admin Password:");
             if (p === "kirat123") {
                 let panel = document.getElementById("adminPanel");
                 panel.style.display = (panel.style.display === "block") ? "none" : "block";
