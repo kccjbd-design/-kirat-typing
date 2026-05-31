@@ -1,63 +1,86 @@
-function submitTest() {
-    clearInterval(timer);
-    let l = document.getElementById("lang").value;
-    let c = document.getElementById("cat").value;
-    let s = document.getElementById("lessonSelect");
-    
-    // Safety check if data exists
-    if (!data[l] || !data[l][c] || !data[l][c][s.value]) return;
-    
-    let currentText = data[l][c][s.value].text;
-    let origWords = currentText.trim().split(/\s+/);
-    let typedWords = document.getElementById("input").value.trim().split(/\s+/);
-    
-    let resDisplayHtml = "";
-    let stats = { correct: 0, wrong: 0, missing: 0, extra: 0 };
+<!DOCTYPE html>
+<html lang="pa">
+<head>
+    <meta charset="UTF-8">
+    <title>Kirat Typing & Steno Lab</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f7f6; padding: 20px; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        textarea { width: 100%; height: 150px; font-size: 20px; margin-top: 10px; }
+        .res-correct { color: green; font-weight: bold; }
+        .res-wrong { color: red; font-weight: bold; text-decoration: underline; }
+        .res-missing { background: yellow; color: black; font-weight: bold; }
+        .res-extra { color: blue; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Kirat Typing & Steno Lab</h1>
+        <div id="display" style="padding:15px; background:#eee; min-height:100px; margin-bottom:10px;"></div>
+        <textarea id="input" placeholder="ਟਾਈਪ ਕਰੋ..."></textarea>
+        <button onclick="submitTest()" style="width:100%; padding:15px; background:red; color:white; font-size:18px;">Submit</button>
+    </div>
 
-    // Linear Comparison: Compare word by word without "re-syncing"
-    // This prevents the cascading error effect seen in screenshots
-    let maxLength = Math.max(origWords.length, typedWords.length);
-
-    for (let i = 0; i < maxLength; i++) {
-        let o = origWords[i];
-        let t = typedWords[i];
-
-        if (t === undefined) {
-            // Missing word
-            resDisplayHtml += `<span style="background:yellow; font-weight:bold; color:black;">${o}</span> `;
-            stats.missing++;
-        } else if (o === undefined) {
-            // Extra word
-            resDisplayHtml += `<span style="color:blue; font-weight:bold;">${t}</span> `;
-            stats.extra++;
-        } else if (o === t) {
-            // Correct
-            resDisplayHtml += `<span style="color:green; font-weight:bold;">${t}</span> `;
-            stats.correct++;
-        } else {
-            // Wrong word (Mismatch)
-            resDisplayHtml += `<span style="color:red; font-weight:bold; text-decoration:underline;">${t}</span> `;
-            stats.wrong++;
-        }
-    }
-
-    // Accuracy Calculation
-    let acc = Math.round((stats.correct / origWords.length) * 100);
-    if(isNaN(acc)) acc = 0;
-
-    // Report Summary
-    let statsHtml = `
-        <div style="border:1px solid #ccc; padding:15px; margin-bottom:15px; border-radius:10px; background:#f9f9f9; line-height:1.8;">
-            <h3 style="margin-top:0;">📊 ਰਿਜ਼ਲਟ ਰਿਪੋਰਟ</h3>
-            <p style="font-size:20px;">Accuracy: <strong>${acc}%</strong></p>
-            <p style="color:green; margin:2px;">✅ ਸਹੀ (Correct): <b>${stats.correct}</b></p>
-            <p style="color:red; margin:2px;">❌ ਗਲਤ (Wrong): <b>${stats.wrong}</b></p>
-            <p style="background:yellow; display:inline-block; padding:0 5px; margin:2px;">⚠️ ਛੱਡੇ ਗਏ (Missing): <b>${stats.missing}</b></p>
-            <p style="color:blue; margin:2px;">➕ ਵਾਧੂ (Extra): <b>${stats.extra}</b></p>
+    <div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5);">
+        <div style="background:white; margin:5% auto; padding:20px; width:80%; max-height:80vh; overflow-y:auto;">
+            <h2>Result Report</h2>
+            <div id="resAccuracy"></div>
+            <div id="resDisplay" style="line-height:2.5; font-size:20px;"></div>
+            <button onclick="document.getElementById('modal').style.display='none'">Close</button>
         </div>
-    `;
+    </div>
 
-    document.getElementById("resAccuracy").innerHTML = statsHtml;
-    document.getElementById("resDisplay").innerHTML = resDisplayHtml;
-    document.getElementById("modal").style.display = "block";
-}
+    <script>
+        // ਤੁਹਾਡਾ ਡੇਟਾ ਇੱਥੇ ਹੋਵੇਗਾ
+        let data = JSON.parse(localStorage.getItem('kiratData')) || { "Punjabi": { "Steno": [{name: "Lesson 1", text: "ਸਲੀਕੇ ਤੋਂ ਭਾਵ ਕਿਸੇ ਕੰਮ ਨੂੰ ਕਰਨ"}] } };
+
+        function submitTest() {
+            let l = document.getElementById("lang") ? document.getElementById("lang").value : "Punjabi";
+            let c = document.getElementById("cat") ? document.getElementById("cat").value : "Steno";
+            let s = document.getElementById("lessonSelect") ? document.getElementById("lessonSelect").value : 0;
+            
+            let originalText = data[l][c][s].text;
+            let origWords = originalText.trim().split(/\s+/);
+            let typedWords = document.getElementById("input").value.trim().split(/\s+/);
+            
+            let resDisplayHtml = "";
+            let stats = { correct: 0, wrong: 0, missing: 0, extra: 0 };
+            
+            let maxLen = Math.max(origWords.length, typedWords.length);
+
+            for (let i = 0; i < maxLen; i++) {
+                let o = origWords[i];
+                let t = typedWords[i];
+
+                if (t === undefined) {
+                    resDisplayHtml += `<span class="res-missing">${o}</span> `;
+                    stats.missing++;
+                } else if (o === undefined) {
+                    resDisplayHtml += `<span class="res-extra">${t}</span> `;
+                    stats.extra++;
+                } else if (o === t) {
+                    resDisplayHtml += `<span class="res-correct">${t}</span> `;
+                    stats.correct++;
+                } else {
+                    resDisplayHtml += `<span class="res-wrong">${t}</span> `;
+                    stats.wrong++;
+                }
+            }
+
+            let acc = Math.round((stats.correct / origWords.length) * 100);
+            
+            document.getElementById("resAccuracy").innerHTML = `
+                <div style="padding:10px; background:#f9f9f9; margin-bottom:10px;">
+                    <p>Accuracy: <b>${isNaN(acc) ? 0 : acc}%</b></p>
+                    <p class="res-correct">✅ Correct: ${stats.correct}</p>
+                    <p style="color:red;">❌ Wrong: ${stats.wrong}</p>
+                    <p class="res-missing">⚠️ Missing: ${stats.missing}</p>
+                    <p class="res-extra">➕ Extra: ${stats.extra}</p>
+                </div>
+            `;
+            document.getElementById("resDisplay").innerHTML = resDisplayHtml;
+            document.getElementById("modal").style.display = "block";
+        }
+    </script>
+</body>
+</html>
