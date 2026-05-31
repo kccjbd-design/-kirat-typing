@@ -97,23 +97,27 @@
             let l = document.getElementById("lang").value;
             let c = document.getElementById("cat").value;
             let s = document.getElementById("lessonSelect");
+            let display = document.getElementById("display");
+            
             let lessons = data[l][c] || [];
             s.innerHTML = "";
             lessons.forEach((item, i) => { s.innerHTML += `<option value="${i}">${item.name}</option>`; });
             
-            let display = document.getElementById("display");
             display.innerHTML = "";
             
             if(lessons.length > 0) {
                 let current = lessons[s.value || 0];
+                
+                // Show audio player
                 if(current.audioUrl) {
                     display.innerHTML += `<audio controls src="${current.audioUrl}" style="width:100%"></audio><br>`;
                 }
-                // HIDE TEXT IF STENO
-                if(c !== 'Steno') {
-                    display.innerHTML += current.text;
+                
+                // STENO LOGIC: Hide text here
+                if (c === 'Steno') {
+                    display.innerHTML += `<div style="text-align:center; padding: 20px; color:#888; font-style:italic;">[ਟੈਕਸਟ ਲੁਕਾਇਆ ਗਿਆ ਹੈ - ਸਿਰਫ ਆਡੀਓ ਸੁਣੋ]</div>`;
                 } else {
-                    display.innerHTML += `<p style="text-align:center; color:#777; padding:20px;">[Dictation Audio Active - Text Hidden]</p>`;
+                    display.innerHTML += current.text;
                 }
             } else { display.innerText = "No lesson found."; }
             
@@ -180,10 +184,11 @@
 
         function submitTest() {
             clearInterval(timer);
-            // Get data directly from object instead of DOM
             let l = document.getElementById("lang").value;
             let c = document.getElementById("cat").value;
             let s = document.getElementById("lessonSelect");
+            
+            // Get data from object directly
             let currentText = data[l][c][s.value].text;
             
             let origWords = currentText.trim().split(/\s+/);
