@@ -6,15 +6,13 @@
     <style>
         body { font-family: sans-serif; background: #f4f7f6; padding: 20px; }
         .container { max-width: 1000px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        .display-area { font-size: 22px; padding: 15px; background: #eee; min-height: 150px; margin-bottom: 10px; border-radius: 5px; line-height: 1.6; }
-        textarea { width: 100%; height: 150px; font-size: 22px; padding: 10px; box-sizing: border-box; }
-        
+        .display-area { font-size: 24px; padding: 20px; background: #eee; min-height: 150px; margin-bottom: 10px; border-radius: 5px; line-height: 1.6; }
+        textarea { width: 100%; height: 150px; font-size: 24px; padding: 15px; box-sizing: border-box; }
         #adminPanel { display: none; background: #fff3cd; padding: 20px; border: 2px dashed #e67e22; margin-top: 20px; border-radius: 8px; }
-        .admin-input { width: 100%; margin-bottom: 10px; padding: 10px; box-sizing: border-box; }
-        
-        #modal { display: none; position: fixed; top: 0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); }
-        .modal-content { background: white; margin: 5% auto; padding: 20px; width: 80%; border-radius: 10px; max-height: 80vh; overflow-y: auto; }
         .err { color: red; text-decoration: underline; font-weight: bold; }
+        #modal { display: none; position: fixed; top: 0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); }
+        .modal-content { background: white; margin: 10% auto; padding: 20px; width: 80%; border-radius: 10px; }
+        .admin-select { width: 100%; padding: 10px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -39,12 +37,17 @@
         <button onclick="submitTest()" style="width:100%; padding:15px; margin-top:10px; background:#e74c3c; color:white; font-size:18px;">Submit Test</button>
 
         <div id="adminPanel">
-            <h3>🛠️ Add New Lesson (Manual/Audio)</h3>
-            <input type="text" id="adminName" class="admin-input" placeholder="Lesson Name">
-            <input type="text" id="adminAudioUrl" class="admin-input" placeholder="Audio URL (YouTube/Drive Link - Optional)">
-            <textarea id="adminText" class="admin-input" placeholder="Manual Dictation Transcript..."></textarea>
+            <h3>🛠️ Add New Lesson (Manual)</h3>
+            <select id="adminCat" class="admin-select">
+                <option value="Characters">Characters</option>
+                <option value="Chunks">Chunks</option>
+                <option value="Paragraphs">Paragraphs</option>
+                <option value="Steno">Steno</option>
+            </select>
+            <input type="text" id="adminName" placeholder="Lesson Name" style="width:100%; padding:10px; margin-bottom:10px;">
+            <textarea id="adminText" placeholder="Paste text here..." style="width:100%; height:100px; padding:10px; margin-bottom:10px;"></textarea>
             <button onclick="saveNewLesson()" style="background:#27ae60; color:white; padding:10px;">Save Lesson</button>
-            <button onclick="resetData()" style="background:#c0392b; color:white; padding:10px;">Reset All</button>
+            <button onclick="resetData()" style="background:#c0392b; color:white; padding:10px;">Reset All Data</button>
         </div>
     </div>
 
@@ -52,8 +55,8 @@
         <div class="modal-content">
             <h2>Result Report</h2>
             <p id="resAccuracy" style="font-weight:bold; font-size:20px;"></p>
-            <p><strong>Original:</strong><br><span id="resOrig"></span></p>
-            <p><strong>Input:</strong><br><span id="resTyped"></span></p>
+            <p><strong>Original Text:</strong> <span id="resOrig"></span></p>
+            <p><strong>Your Input:</strong> <span id="resTyped"></span></p>
             <button onclick="document.getElementById('modal').style.display='none'" style="padding:10px 20px;">Close</button>
         </div>
     </div>
@@ -89,15 +92,7 @@
             let lessons = data[l][c] || [];
             s.innerHTML = "";
             lessons.forEach((item, i) => { s.innerHTML += `<option value="${i}">${item.name}</option>`; });
-            
-            let display = document.getElementById("display");
-            if(lessons.length > 0) {
-                let current = lessons[s.value || 0];
-                let audioHtml = current.audioUrl ? `<a href="${current.audioUrl}" target="_blank" style="display:block; margin-bottom:10px; color:blue;">🔊 Listen to Dictation</a>` : "";
-                display.innerHTML = audioHtml + current.text;
-            } else {
-                display.innerText = "No lesson found.";
-            }
+            document.getElementById("display").innerText = lessons.length > 0 ? lessons[s.value || 0].text : "No lesson found.";
             
             let cat = document.getElementById("cat").value;
             document.getElementById('timer').innerText = (cat === 'Steno') ? "25:00" : "10:00";
@@ -108,15 +103,13 @@
 
         function saveNewLesson() {
             let l = document.getElementById("lang").value;
-            let c = document.getElementById("cat").value;
+            let c = document.getElementById("adminCat").value; // Added correct category selector
             let name = document.getElementById("adminName").value;
-            let audioUrl = document.getElementById("adminAudioUrl").value;
             let text = document.getElementById("adminText").value;
-            
             if(name && text) {
-                data[l][c].push({name: name, audioUrl: audioUrl, text: text});
+                data[l][c].push({name: name, text: text});
                 localStorage.setItem('kiratData', JSON.stringify(data));
-                alert("Saved!");
+                alert("Saved to " + c + "!");
                 loadLesson();
             }
         }
@@ -127,22 +120,23 @@
 
         function submitTest() {
             clearInterval(timer);
-            let displayElem = document.getElementById("display");
-            let origText = displayElem.innerText.replace("🔊 Listen to Dictation", "").trim();
-            
-            let origWords = origText.split(/\s+/);
+            let origWords = document.getElementById("display").innerText.trim().split(/\s+/);
             let typedWords = document.getElementById("input").value.trim().split(/\s+/);
             let correct = 0;
             let resTypedHtml = "";
 
             origWords.forEach((word, i) => {
-                if(typedWords[i] === word) { correct++; resTypedHtml += word + " "; } 
-                else { resTypedHtml += `<span class="err">${typedWords[i] || ""}</span> `; }
+                if(typedWords[i] === word) {
+                    correct++;
+                    resTypedHtml += word + " ";
+                } else {
+                    resTypedHtml += `<span class="err">${typedWords[i] || ""}</span> `;
+                }
             });
 
             let acc = Math.round((correct / origWords.length) * 100);
             document.getElementById("resAccuracy").innerText = "Accuracy: " + (isNaN(acc) ? 0 : acc) + "%";
-            document.getElementById("resOrig").innerText = origText;
+            document.getElementById("resOrig").innerText = origWords.join(" ");
             document.getElementById("resTyped").innerHTML = resTypedHtml;
             document.getElementById("modal").style.display = "block";
         }
