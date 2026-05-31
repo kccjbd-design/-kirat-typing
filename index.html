@@ -68,7 +68,6 @@
     <button onclick="switchView('admin')">Admin Panel</button>
 </div>
 
-<!-- STUDENT PANEL -->
 <div class="container" id="studentPanel">
     <h2>⌨️ Kirat Typing & Steno Lab</h2>
     
@@ -81,7 +80,6 @@
         <select id="testLesson" onchange="displayLessonText()"></select>
     </div>
 
-    <!-- Audio Player Section for Steno -->
     <div id="audioContainer">
         <audio id="audioPlayer" controls style="display:none;"></audio>
         <a id="audioLinkBtn" class="audio-link-btn" href="#" target="_blank" style="display:none;">🔊 Open Recording URL</a>
@@ -92,7 +90,6 @@
     <button class="btn-submit" onclick="submitTest()">Submit Test</button>
 </div>
 
-<!-- ADMIN PANEL -->
 <div class="container" id="adminPanel">
     <h2>⚙️ Admin Panel - Manage Lessons</h2>
     
@@ -107,7 +104,6 @@
             <input type="text" id="adminLessonName" placeholder="Lesson Name (ਪੈਰੇ ਦਾ ਨਾਮ)" style="flex: 1; min-width: 200px;">
         </div>
         
-        <!-- NEW FIELD: Audio/Recording URL -->
         <input type="text" id="adminAudioUrl" placeholder="Recording URL (ਲਿੰਕ) - Optional (e.g. YouTube, MP3 link)" style="width: 100%; box-sizing: border-box;">
         
         <textarea id="adminLessonText" placeholder="ਪੈਰੇ ਦਾ ਟੈਕਸਟ ਇੱਥੇ ਪੇਸਟ ਕਰੋ..."></textarea>
@@ -131,13 +127,11 @@
                 </tr>
             </thead>
             <tbody id="adminLessonsList">
-                <!-- Lessons dynamic load -->
-            </tbody>
+                </tbody>
         </table>
     </div>
 </div>
 
-<!-- RESULT MODAL -->
 <div id="modal">
     <div class="modal-content">
         <button class="close-btn" onclick="document.getElementById('modal').style.display='none'">Close</button>
@@ -149,14 +143,21 @@
 </div>
 
 <script>
-    // 1. Database Initialization
+    // 1. Anti-Crash Database Initialization
     let defaultData = {
         "Typing": { "Punjabi": [], "English": [], "Hindi": [] },
         "Steno": { "Punjabi": [], "English": [] }
     };
 
-    let db = JSON.parse(localStorage.getItem('kiratDB'));
-    if (!db || !db["Typing"] || !db["Steno"]) {
+    let db;
+    try {
+        db = JSON.parse(localStorage.getItem('kiratDB'));
+        // ਜੇਕਰ ਪੁਰਾਣਾ ਡੇਟਾ ਖਰਾਬ ਹੈ ਤਾਂ ਐਰਰ ਦੇਵੇਗਾ
+        if (!db || typeof db !== 'object' || !db["Typing"] || !db["Steno"]) {
+            throw new Error("Invalid DB");
+        }
+    } catch (e) {
+        // ਖਰਾਬ ਡੇਟਾ ਹੋਣ 'ਤੇ ਆਟੋਮੈਟਿਕ ਸਹੀ ਫਾਰਮੈਟ ਬਣਾ ਲਵੇਗਾ (White Screen Fix)
         db = defaultData;
         db["Typing"]["Punjabi"].push({ name: "Demo Lesson 1", text: "ਸਲੀਕੇ ਤੋਂ ਭਾਵ ਕਿਸੇ ਕੰਮ ਨੂੰ ਕਰਨ ਜਾਂ ਜੀਵਨ ਵਿੱਚ ਵਿਚਰਨ ਦਾ ਅਜਿਹਾ ਸੁਚੱਜ ਹੈ ਜਿਸ ਨਾਲ ਕੰਮ ਕਰਨ ਵਿੱਚ ਅਸਾਨੀ ਹੋਵੇ।", audioUrl: "" });
         localStorage.setItem('kiratDB', JSON.stringify(db));
