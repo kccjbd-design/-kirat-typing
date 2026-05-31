@@ -46,7 +46,7 @@
             </select>
             <input type="text" id="adminName" class="admin-input" placeholder="Lesson Name">
             <input type="text" id="adminAudioUrl" class="admin-input" placeholder="Audio URL (Optional)">
-            <label>Or Browse Local Audio:</label>
+            <label><strong>Select Local Recording:</strong></label>
             <input type="file" id="adminFile" accept="audio/*" class="admin-input">
             <textarea id="adminText" class="admin-input" placeholder="Paste Transcript here..."></textarea>
             <button onclick="saveNewLesson()" style="background:#27ae60; color:white; padding:10px;">Save Lesson</button>
@@ -120,7 +120,6 @@
             let text = document.getElementById("adminText").value;
             let audioUrl = document.getElementById("adminAudioUrl").value;
             
-            // Handle Local File
             let fileInput = document.getElementById("adminFile");
             if (fileInput.files.length > 0) {
                 audioUrl = URL.createObjectURL(fileInput.files[0]);
