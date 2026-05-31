@@ -2,85 +2,141 @@
 <html lang="pa">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kirat Typing & Steno Lab</title>
     <style>
         body { font-family: sans-serif; background: #f4f7f6; padding: 20px; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        textarea { width: 100%; height: 150px; font-size: 20px; margin-top: 10px; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); text-align: center; }
+        select, button { padding: 10px; margin: 5px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; }
+        textarea { width: 100%; height: 200px; font-size: 18px; margin-top: 15px; padding: 10px; box-sizing: border-box; border-radius: 5px; border: 1px solid #aaa; }
+        #displayBox { background: #fff; padding: 15px; border: 1px solid #ccc; border-radius: 5px; text-align: justify; font-size: 18px; line-height: 1.8; max-height: 200px; overflow-y: auto; margin-bottom: 15px; }
+
+        /* Result Colors */
         .res-correct { color: green; font-weight: bold; }
         .res-wrong { color: red; font-weight: bold; text-decoration: underline; }
-        .res-missing { background: yellow; color: black; font-weight: bold; }
+        .res-missing { background: yellow; color: black; font-weight: bold; padding: 0 2px; }
         .res-extra { color: blue; font-weight: bold; }
+
+        /* Modal Styles */
+        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; }
+        .modal-content { background: white; margin: 5% auto; padding: 20px; width: 85%; max-width: 900px; max-height: 85vh; overflow-y: auto; border-radius: 10px; text-align: left; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .close-btn { background: #d9534f; color: white; padding: 10px 20px; border: none; cursor: pointer; float: right; font-size: 16px; border-radius: 5px; font-weight: bold; }
+        .close-btn:hover { background: #c9302c; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Kirat Typing & Steno Lab</h1>
-        <div id="display" style="padding:15px; background:#eee; min-height:100px; margin-bottom:10px;"></div>
-        <textarea id="input" placeholder="ਟਾਈਪ ਕਰੋ..."></textarea>
-        <button onclick="submitTest()" style="width:100%; padding:15px; background:red; color:white; font-size:18px;">Submit</button>
+
+<div class="container">
+    <h2>⌨️ Kirat Typing & Steno Lab</h2>
+    
+    <div>
+        <select id="lang"><option value="Punjabi">Punjabi</option></select>
+        <select id="cat"><option value="Steno">Steno</option></select>
+        <select id="lessonSelect"><option value="0">Lesson 1</option></select>
     </div>
 
-    <div id="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5);">
-        <div style="background:white; margin:5% auto; padding:20px; width:80%; max-height:80vh; overflow-y:auto;">
-            <h2>Result Report</h2>
-            <div id="resAccuracy"></div>
-            <div id="resDisplay" style="line-height:2.5; font-size:20px;"></div>
-            <button onclick="document.getElementById('modal').style.display='none'">Close</button>
-        </div>
+    <div id="displayBox">ਸਲੀਕੇ ਤੋਂ ਭਾਵ ਕਿਸੇ ਕੰਮ ਨੂੰ ਕਰਨ ਜਾਂ ਜੀਵਨ ਵਿੱਚ ਵਿਚਰਨ ਦਾ ਅਜਿਹਾ ਸੁਚੱਜ ਹੈ ਜਿਸ ਨਾਲ ਕੰਮ ਕਰਨ ਵਿੱਚ ਅਸਾਨੀ ਹੋਵੇ ਅਤੇ ਦੂਜਿਆਂ ਉੱਪਰ ਉਸ ਦਾ ਚੰਗਾ ਪ੍ਰਭਾਵ ਪਵੇ।</div>
+    
+    <textarea id="input" placeholder="ਇੱਥੇ ਟਾਈਪ ਕਰੋ..."></textarea>
+    
+    <button onclick="submitTest()" style="background: #28a745; color: white; border: none; cursor: pointer; margin-top: 15px; width: 100%; font-weight: bold;">Submit Test</button>
+</div>
+
+<div id="modal">
+    <div class="modal-content">
+        <button class="close-btn" onclick="document.getElementById('modal').style.display='none'">Close</button>
+        <h2 style="margin-top: 0; color: #333;">📊 Result Report</h2>
+        <div id="resAccuracy"></div>
+        <hr style="border: 0; border-top: 1px solid #ddd; margin: 20px 0;">
+        <div id="resDisplay" style="line-height: 2.2; font-size: 18px;"></div>
     </div>
+</div>
 
-    <script>
-        // ਤੁਹਾਡਾ ਡੇਟਾ ਇੱਥੇ ਹੋਵੇਗਾ
-        let data = JSON.parse(localStorage.getItem('kiratData')) || { "Punjabi": { "Steno": [{name: "Lesson 1", text: "ਸਲੀਕੇ ਤੋਂ ਭਾਵ ਕਿਸੇ ਕੰਮ ਨੂੰ ਕਰਨ"}] } };
-
-        function submitTest() {
-            let l = document.getElementById("lang") ? document.getElementById("lang").value : "Punjabi";
-            let c = document.getElementById("cat") ? document.getElementById("cat").value : "Steno";
-            let s = document.getElementById("lessonSelect") ? document.getElementById("lessonSelect").value : 0;
-            
-            let originalText = data[l][c][s].text;
-            let origWords = originalText.trim().split(/\s+/);
-            let typedWords = document.getElementById("input").value.trim().split(/\s+/);
-            
-            let resDisplayHtml = "";
-            let stats = { correct: 0, wrong: 0, missing: 0, extra: 0 };
-            
-            let maxLen = Math.max(origWords.length, typedWords.length);
-
-            for (let i = 0; i < maxLen; i++) {
-                let o = origWords[i];
-                let t = typedWords[i];
-
-                if (t === undefined) {
-                    resDisplayHtml += `<span class="res-missing">${o}</span> `;
-                    stats.missing++;
-                } else if (o === undefined) {
-                    resDisplayHtml += `<span class="res-extra">${t}</span> `;
-                    stats.extra++;
-                } else if (o === t) {
-                    resDisplayHtml += `<span class="res-correct">${t}</span> `;
-                    stats.correct++;
-                } else {
-                    resDisplayHtml += `<span class="res-wrong">${t}</span> `;
-                    stats.wrong++;
-                }
-            }
-
-            let acc = Math.round((stats.correct / origWords.length) * 100);
-            
-            document.getElementById("resAccuracy").innerHTML = `
-                <div style="padding:10px; background:#f9f9f9; margin-bottom:10px;">
-                    <p>Accuracy: <b>${isNaN(acc) ? 0 : acc}%</b></p>
-                    <p class="res-correct">✅ Correct: ${stats.correct}</p>
-                    <p style="color:red;">❌ Wrong: ${stats.wrong}</p>
-                    <p class="res-missing">⚠️ Missing: ${stats.missing}</p>
-                    <p class="res-extra">➕ Extra: ${stats.extra}</p>
-                </div>
-            `;
-            document.getElementById("resDisplay").innerHTML = resDisplayHtml;
-            document.getElementById("modal").style.display = "block";
+<script>
+    // ਡਿਫੌਲਟ ਡੇਟਾ (ਜੇ LocalStorage ਵਿੱਚ ਕੁਝ ਨਾ ਹੋਵੇ ਤਾਂ ਇਹ ਚੱਲੇਗਾ)
+    let defaultText = "ਸਲੀਕੇ ਤੋਂ ਭਾਵ ਕਿਸੇ ਕੰਮ ਨੂੰ ਕਰਨ ਜਾਂ ਜੀਵਨ ਵਿੱਚ ਵਿਚਰਨ ਦਾ ਅਜਿਹਾ ਸੁਚੱਜ ਹੈ ਜਿਸ ਨਾਲ ਕੰਮ ਕਰਨ ਵਿੱਚ ਅਸਾਨੀ ਹੋਵੇ ਅਤੇ ਦੂਜਿਆਂ ਉੱਪਰ ਉਸ ਦਾ ਚੰਗਾ ਪ੍ਰਭਾਵ ਪਵੇ।";
+    let data = {
+        "Punjabi": {
+            "Steno": [
+                { name: "Lesson 1", text: defaultText }
+            ]
         }
-    </script>
+    };
+
+    // ਜੇ ਬ੍ਰਾਊਜ਼ਰ ਵਿੱਚ ਲੈਸਨ ਸੇਵ ਹਨ, ਤਾਂ ਉਹ ਲੋਡ ਹੋਣਗੇ
+    let savedData = JSON.parse(localStorage.getItem('kiratData'));
+    if(savedData) {
+        data = savedData;
+    }
+
+    let timer; // ਟਾਈਮਰ ਵੇਰੀਏਬਲ
+
+    function submitTest() {
+        clearInterval(timer);
+        
+        let l = document.getElementById("lang").value;
+        let c = document.getElementById("cat").value;
+        let s = document.getElementById("lessonSelect").value;
+        
+        let currentText = data[l][c][s].text;
+        
+        // ਸ਼ਬਦਾਂ ਦੀ ਐਰੇ (Array) ਬਣਾਉਣੀ
+        let origWords = currentText.trim().split(/\s+/);
+        let typedWords = document.getElementById("input").value.trim().split(/\s+/);
+        
+        // ਜੇ ਟੈਕਸਟ ਏਰੀਆ ਖਾਲੀ ਹੈ ਤਾਂ ਐਰੇ ਨੂੰ ਖਾਲੀ ਕਰ ਦਿਓ
+        if(document.getElementById("input").value.trim() === "") {
+            typedWords = [];
+        }
+        
+        let resDisplayHtml = "";
+        let stats = { correct: 0, wrong: 0, missing: 0, extra: 0 };
+        
+        let maxLen = Math.max(origWords.length, typedWords.length);
+
+        // ਸ਼ਬਦ-ਦਰ-ਸ਼ਬਦ ਤੁਲਨਾ (ਸਿੱਧੀ ਚੈਕਿੰਗ)
+        for (let i = 0; i < maxLen; i++) {
+            let o = origWords[i];
+            let t = typedWords[i];
+
+            if (t === undefined) {
+                // ਸ਼ਬਦ ਛੱਡ ਦਿੱਤਾ (Missing)
+                resDisplayHtml += `<span class="res-missing">${o}</span> `;
+                stats.missing++;
+            } else if (o === undefined) {
+                // ਵਾਧੂ ਸ਼ਬਦ ਲਿਖ ਦਿੱਤਾ (Extra)
+                resDisplayHtml += `<span class="res-extra">${t}</span> `;
+                stats.extra++;
+            } else if (o === t) {
+                // ਬਿਲਕੁਲ ਸਹੀ (Correct)
+                resDisplayHtml += `<span class="res-correct">${t}</span> `;
+                stats.correct++;
+            } else {
+                // ਗਲਤ ਸ਼ਬਦ (Wrong)
+                resDisplayHtml += `<span class="res-wrong">${t}</span> `;
+                stats.wrong++;
+            }
+        }
+
+        // Accuracy (ਸ਼ੁੱਧਤਾ) ਕੱਢਣੀ
+        let acc = Math.round((stats.correct / origWords.length) * 100);
+        if (isNaN(acc) || acc < 0) acc = 0;
+
+        // ਰਿਜ਼ਲਟ ਦਾ ਡੱਬਾ (Summary UI)
+        document.getElementById("resAccuracy").innerHTML = `
+            <div style="padding:15px; background:#f9f9f9; border:1px solid #ccc; border-radius:8px;">
+                <p style="font-size: 22px; margin: 5px 0;">Accuracy: <b style="color: ${acc > 80 ? 'green' : 'red'};">${acc}%</b></p>
+                <p class="res-correct" style="margin:8px 0; font-size:18px;">✅ Correct (ਸਹੀ): <b>${stats.correct}</b></p>
+                <p class="res-wrong" style="margin:8px 0; font-size:18px; text-decoration:none;">❌ Wrong (ਗਲਤ): <b>${stats.wrong}</b></p>
+                <p class="res-missing" style="margin:8px 0; display:inline-block; font-size:18px;">⚠️ Missing (ਛੱਡੇ ਗਏ): <b>${stats.missing}</b></p><br>
+                <p class="res-extra" style="margin:8px 0; font-size:18px;">➕ Extra (ਵਾਧੂ): <b>${stats.extra}</b></p>
+            </div>
+        `;
+        
+        // ਸਕਰੀਨ 'ਤੇ ਰਿਜ਼ਲਟ ਦਿਖਾਉਣਾ
+        document.getElementById("resDisplay").innerHTML = resDisplayHtml;
+        document.getElementById("modal").style.display = "block";
+    }
+</script>
 </body>
 </html>
