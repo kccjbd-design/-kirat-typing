@@ -2,335 +2,98 @@
 <html lang="pa">
 <head>
     <meta charset="UTF-8">
-    <title>Kirat Typing & Steno Lab</title>
+    <title>Kirat Typing Lab</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: #2c3e50; cursor: pointer; user-select: none; }
-        .menu { display: flex; gap: 10px; justify-content: center; margin-bottom: 15px; }
-        button { padding: 12px 20px; cursor: pointer; border: none; border-radius: 5px; font-weight: bold; background: #3498db; color: white; font-size: 16px; }
-        .btn-active { background: #27ae60 !important; }
-        
-        .stats-bar { display: flex; justify-content: space-between; background: #e8f4f8; padding: 15px 25px; border-radius: 8px; margin-bottom: 15px; font-size: 20px; font-weight: bold; border: 1px solid #bce8f1; color: #31708f; }
-        .controls { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
-        select { padding: 10px; font-size: 17px; border-radius: 5px; border: 1px solid #ccc; flex: 1; }
-        .highlight-select { background: #eef2f3; font-weight: bold; color: #2c3e50; border: 2px solid #3498db; }
-        
-        .display-area { font-size: 22px; padding: 15px; background: #f9f9f9; border: 1px solid #ccc; border-radius: 8px; height: 200px; overflow-y: auto; margin-bottom: 15px; line-height: 1.6; user-select: none; }
-        textarea { width: 100%; height: 200px; font-size: 22px; padding: 15px; border: 2px solid #3498db; border-radius: 8px; box-sizing: border-box; resize: none; line-height: 1.6; }
-        textarea:focus { outline: none; border-color: #27ae60; box-shadow: 0 0 8px rgba(39,174,96,0.3); }
-        
-        .submit-btn { background: #e74c3c; width: 100%; margin-top: 15px; font-size: 20px; padding: 15px; }
-        .submit-btn:hover { background: #c0392b; }
-        
-        #adminPanel { display: none; background: #fff3cd; padding: 20px; border: 2px dashed #e67e22; border-radius: 8px; margin-top: 25px; }
-        .admin-input { width: 100%; padding: 10px; font-size: 16px; margin-bottom: 10px; box-sizing: border-box; }
-        .admin-textarea { height: 120px; font-size: 18px; width: 100%; border: 1px solid #e67e22; padding: 10px; box-sizing: border-box; margin-bottom:10px;}
-        #resultMsg { text-align: center; font-size: 22px; font-weight: bold; margin-top: 15px; color: #d35400; }
+        body { font-family: sans-serif; background: #f4f7f6; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .display-area { font-size: 24px; padding: 15px; background: #eee; min-height: 100px; margin-bottom: 10px; border-radius: 5px; }
+        textarea { width: 100%; height: 150px; font-size: 24px; padding: 10px; box-sizing: border-box; }
+        #modal { display: none; position: fixed; top: 0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); }
+        .modal-content { background: white; margin: 10% auto; padding: 20px; width: 80%; border-radius: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 onclick="toggleAdmin()">⌨️ Kirat Typing & Steno Lab</h1>
+        <h1>⌨️ Kirat Typing Lab</h1>
+        <select id="lang" onchange="loadLesson()">
+            <option value="Punjabi">Punjabi</option>
+            <option value="English">English</option>
+        </select>
+        <select id="cat" onchange="loadLesson()">
+            <option value="Characters">Characters</option>
+            <option value="Chunks">Chunks</option>
+            <option value="Paragraphs">Paragraphs</option>
+        </select>
+        <select id="lessonSelect" onchange="loadLesson()"></select>
         
-        <div class="menu">
-            <button id="typeBtn" class="btn-active" onclick="setMode('typing')">Typing Mode (10 Min)</button>
-            <button id="stenoBtn" onclick="setMode('steno')">🎧 Steno Mode (25 Min)</button>
-        </div>
-
-        <div class="stats-bar">
-            <span id="timerDisplay">⏱️ Time: 10:00</span>
-            <span id="accuracyDisplay">🎯 Accuracy: 0%</span>
-        </div>
-
-        <div class="controls">
-            <!-- ਭਾਸ਼ਾ -->
-            <select id="langSelect" class="highlight-select" onchange="changeLanguage()">
-                <option value="Punjabi">Punjabi</option>
-                <option value="English">English</option>
-                <option value="Hindi">Hindi</option>
-            </select>
-            <!-- ਕੈਟਾਗਰੀ -->
-            <select id="categorySelect" class="highlight-select" onchange="changeCategory()">
-                <option value="Characters">ਅੱਖਰ ਪਹਿਚਾਣ (Characters)</option>
-                <option value="Chunks">ਛੋਟੇ ਪਹਿਰੇ (Chunks)</option>
-                <option value="Paragraphs">ਪੂਰੇ ਪਹਿਰੇ (Paragraphs)</option>
-            </select>
-            <!-- ਲੈਸਨ -->
-            <select id="lessonSelect" onchange="loadLesson()"></select>
-            <button onclick="resetTest()" style="background: #f39c12; color:white; font-weight:bold; padding:10px 20px; border:none; border-radius:5px; cursor:pointer;">Reset</button>
-        </div>
-
         <div id="display" class="display-area"></div>
-        <textarea id="input" placeholder="ਇੱਥੇ ਟਾਈਪ ਕਰਨਾ ਸ਼ੁਰੂ ਕਰੋ..." oninput="startTest()"></textarea>
-        
-        <button class="submit-btn" onclick="submitTest()">ਟੈਸਟ ਖਤਮ ਕਰੋ (Submit Test)</button>
-        <div id="resultMsg"></div>
+        <textarea id="input" oninput="startTimer()"></textarea>
+        <button onclick="submitTest()" style="width:100%; padding:15px; margin-top:10px;">Submit Test</button>
+    </div>
 
-        <!-- Admin Panel -->
-        <div id="adminPanel">
-            <h3>🛠️ Admin Panel (ਨਵਾਂ ਲੈਸਨ/ਪਹਿਰਾ ਐਡ ਕਰੋ)</h3>
-            <div style="display:flex; gap:10px;">
-                <select id="adminLangSelect" class="admin-input">
-                    <option value="Punjabi">Punjabi</option>
-                    <option value="English">English</option>
-                    <option value="Hindi">Hindi</option>
-                </select>
-                <select id="adminCatSelect" class="admin-input">
-                    <option value="Characters">ਅੱਖਰ ਪਹਿਚਾਣ (Characters)</option>
-                    <option value="Chunks">ਛੋਟੇ ਪਹਿਰੇ (Chunks)</option>
-                    <option value="Paragraphs">ਪੂਰੇ ਪਹਿਰੇ (Paragraphs)</option>
-                </select>
-            </div>
-            <input type="text" id="newLessonName" class="admin-input" placeholder="ਟਾਈਟਲ (ਜਿਵੇਂ: Level 4 ਜਾਂ Chunk 1 ਜਾਂ PSSSB ਪਹਿਰਾ)">
-            <textarea id="newLessonText" class="admin-textarea" placeholder="ਇੱਥੇ ਨਵਾਂ ਪਹਿਰਾ, ਚੰਕ ਜਾਂ ਅੱਖਰ ਲਿਖੋ..."></textarea>
-            <button onclick="addCustomLesson()" style="background: #27ae60; padding:10px 20px; color:white; font-weight:bold; border:none; border-radius:5px;">Save Lesson</button>
-            <button onclick="clearProgress()" style="background: #c0392b; padding:10px 20px; color:white; font-weight:bold; border:none; border-radius:5px; float: right;">Clear Progress</button>
+    <div id="modal">
+        <div class="modal-content">
+            <h2>Result Report</h2>
+            <p id="resAccuracy"></p>
+            <p><strong>Original:</strong> <span id="resOrig"></span></p>
+            <p><strong>Your Input:</strong> <span id="resTyped"></span></p>
+            <button onclick="document.getElementById('modal').style.display='none'">Close</button>
         </div>
     </div>
 
     <script>
-        let defaultData = {
+        let data = {
             "Punjabi": {
-                "Characters": [
-                    { name: "Level 1 (ਵਿਚਕਾਰਲੀ ਲਾਈਨ)", text: "ਕ ਮ ਜ ਲ ਹ ਕਮਲ ਜਲ ਮਲ ਹਲ ਕਲ ਜਮ ਲਕ" },
-                    { name: "Level 2 (ਉੱਪਰਲੀ ਲਾਈਨ)", text: "ਤ ਰ ਚ ਟ ਪ ਤਾਰਾ ਚਾਚਾ ਪਾਰਾ ਚਟ ਪਟ ਤਰ" },
-                    { name: "Level 3 (ਹੇਠਲੀ ਲਾਈਨ)", text: "ਬ ਨ ਥ ਗ ਬਣ ਗਣ ਥਨ ਨਗ ਬਗ ਗਬ" }
-                ],
-                "Chunks": [
-                    { name: "Chunk 1 (ਬੇਸਿਕ)", text: "ਇਹ ਟਾਈਪਿੰਗ ਦਾ ਇੱਕ ਛੋਟਾ ਚੰਕ ਹੈ ਜੋ ਅਭਿਆਸ ਲਈ ਬਣਾਇਆ ਗਿਆ ਹੈ।" }
-                ],
-                "Paragraphs": [
-                    { name: "Paragraph 1 (PSSSB)", text: "ਪੰਜਾਬ ਦੇ ਇਤਿਹਾਸ ਵਿੱਚ ਬਹੁਤ ਸਾਰੇ ਮਹਾਨ ਵਿਦਵਾਨ ਹੋਏ ਹਨ ਜਿਨ੍ਹਾਂ ਨੇ ਸਾਹਿਤ ਵਿੱਚ ਆਪਣਾ ਯੋਗਦਾਨ ਪਾਇਆ ਹੈ।" }
-                ]
+                "Characters": [{name:"L1", text:"ਕ ਮ ਜ ਲ"}],
+                "Chunks": [{name:"C1", text:"ਇਹ ਇੱਕ ਚੰਕ ਹੈ"}],
+                "Paragraphs": [{name:"P1", text:"ਪੰਜਾਬੀ ਟਾਈਪਿੰਗ ਦਾ ਪਹਿਰਾ।"}]
             },
             "English": {
-                "Characters": [{ name: "Level 1 (Home Row)", text: "a s d f g h j k l ; asdf jkl;" }],
-                "Chunks": [{ name: "Chunk 1", text: "The quick brown fox jumps over the lazy dog." }],
-                "Paragraphs": [{ name: "Para 1", text: "Typing is a crucial skill in the modern digital age. It helps improve productivity and efficiency." }]
-            },
-            "Hindi": {
-                "Characters": [{ name: "Level 1", text: "क म ज ल ह" }],
-                "Chunks": [{ name: "Chunk 1", text: "यह एक छोटा अभ्यास है।" }],
-                "Paragraphs": [{ name: "Para 1", text: "हिंदी भारत की एक प्रमुख भाषा है और इसका इतिहास बहुत ही समृद्ध है।" }]
+                "Characters": [{name:"L1", text:"a s d f"}],
+                "Chunks": [{name:"C1", text:"quick brown fox"}],
+                "Paragraphs": [{name:"P1", text:"Typing is good."}]
             }
         };
-
-        // Using V2 keys so it doesn't clash with your old data
-        let lessonsData = JSON.parse(localStorage.getItem('kiratV2_Lessons')) || defaultData;
-        let unlockedLevels = JSON.parse(localStorage.getItem('kiratV2_Unlocked')) || {
-            "Punjabi": { "Characters": 0, "Chunks": 0, "Paragraphs": 0 },
-            "English": { "Characters": 0, "Chunks": 0, "Paragraphs": 0 },
-            "Hindi": { "Characters": 0, "Chunks": 0, "Paragraphs": 0 }
-        };
-        
-        let currentLang = "Punjabi";
-        let currentCat = "Characters";
-        let currentMode = 'typing';
-        let totalTime = 10 * 60; 
-        let timeLeft = totalTime;
-        let timerInterval = null;
-        let testStarted = false;
-        let currentLessonText = "";
-
-        function initApp() {
-            changeLanguage();
-        }
-
-        function changeLanguage() {
-            currentLang = document.getElementById("langSelect").value;
-            changeCategory();
-        }
-
-        function changeCategory() {
-            currentCat = document.getElementById("categorySelect").value;
-            updateLessonDropdown();
-            loadLesson();
-            resetTest();
-        }
-
-        function updateLessonDropdown() {
-            let select = document.getElementById("lessonSelect");
-            select.innerHTML = "";
-            let lessons = lessonsData[currentLang][currentCat] || [];
-            let unlocked = unlockedLevels[currentLang][currentCat] || 0;
-
-            lessons.forEach((lesson, index) => {
-                let option = document.createElement("option");
-                option.value = index;
-                if (index > unlocked) {
-                    option.text = `🔒 ${lesson.name} (Locked)`;
-                    option.disabled = true;
-                } else {
-                    option.text = `🔓 ${lesson.name}`;
-                }
-                select.appendChild(option);
-            });
-            
-            select.value = unlocked < lessons.length ? unlocked : (lessons.length > 0 ? lessons.length - 1 : "");
-        }
 
         function loadLesson() {
-            let select = document.getElementById("lessonSelect");
-            if(!select.value) {
-                currentLessonText = "ਇਸ ਕੈਟਾਗਰੀ ਵਿੱਚ ਕੋਈ ਲੈਸਨ ਮੌਜੂਦ ਨਹੀਂ ਹੈ। ਐਡਮਿਨ ਪੈਨਲ ਤੋਂ ਐਡ ਕਰੋ।";
-                document.getElementById("display").innerText = currentLessonText;
-                return;
-            }
-            let index = select.value;
-            currentLessonText = lessonsData[currentLang][currentCat][index].text;
-            document.getElementById("display").innerText = currentLessonText;
-            resetTest();
-        }
-
-        function setMode(mode) {
-            currentMode = mode;
-            document.getElementById("typeBtn").classList.remove("btn-active");
-            document.getElementById("stenoBtn").classList.remove("btn-active");
-            
-            if (mode === 'typing') {
-                document.getElementById("typeBtn").classList.add("btn-active");
-                totalTime = 10 * 60;
-            } else {
-                document.getElementById("stenoBtn").classList.add("btn-active");
-                totalTime = 25 * 60;
-            }
-            resetTest();
-        }
-
-        function startTest() {
-            if (!testStarted) {
-                testStarted = true;
-                timerInterval = setInterval(updateTime, 1000);
-            }
-            calculateLiveAccuracy();
-        }
-
-        function updateTime() {
-            if (timeLeft > 0) {
-                timeLeft--;
-                updateTimerDisplay();
-            } else {
-                submitTest();
-            }
-        }
-
-        function updateTimerDisplay() {
-            let minutes = Math.floor(timeLeft / 60);
-            let seconds = timeLeft % 60;
-            document.getElementById("timerDisplay").innerText = `⏱️ Time: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-        }
-
-        function calculateLiveAccuracy() {
-            let typedText = document.getElementById("input").value;
-            if (typedText.length === 0) {
-                document.getElementById("accuracyDisplay").innerText = `🎯 Accuracy: 0%`;
-                return 0;
-            }
-
-            let correctChars = 0;
-            let checkLength = Math.min(typedText.length, currentLessonText.length);
-            for (let i = 0; i < checkLength; i++) {
-                if (typedText[i] === currentLessonText[i]) {
-                    correctChars++;
-                }
-            }
-            
-            let accuracy = Math.round((correctChars / typedText.length) * 100);
-            if(accuracy > 100) accuracy = 100;
-            document.getElementById("accuracyDisplay").innerText = `🎯 Accuracy: ${accuracy}%`;
-            return accuracy;
+            let l = document.getElementById("lang").value;
+            let c = document.getElementById("cat").value;
+            let s = document.getElementById("lessonSelect");
+            let lessons = data[l][c];
+            s.innerHTML = "";
+            lessons.forEach((item, i) => {
+                s.innerHTML += `<option value="${i}">${item.name}</option>`;
+            });
+            document.getElementById("display").innerText = lessons[0].text;
         }
 
         function submitTest() {
-            clearInterval(timerInterval);
-            let typedText = document.getElementById("input").value;
-            document.getElementById("input").disabled = true;
-            
-            if(typedText.length < 5) { 
-                document.getElementById("resultMsg").innerText = "❌ ਟੈਸਟ ਬਹੁਤ ਛੋਟਾ ਹੈ!";
-                return;
-            }
+            let orig = document.getElementById("display").innerText.split(" ");
+            let typed = document.getElementById("input").value.split(" ");
+            let correct = 0;
+            let resTypedHtml = "";
 
-            let finalAccuracy = calculateLiveAccuracy();
-            let currentIndex = parseInt(document.getElementById("lessonSelect").value);
-            let unlocked = unlockedLevels[currentLang][currentCat];
-            let totalLessons = lessonsData[currentLang][currentCat].length;
-
-            if (finalAccuracy >= 98) {
-                document.getElementById("resultMsg").innerHTML = `🎉 ਸ਼ਾਨਦਾਰ! ਤੁਹਾਡੀ ਐਕਿਊਰੇਸੀ ${finalAccuracy}% ਹੈ।`;
-                if (currentIndex === unlocked && unlocked < totalLessons - 1) {
-                    unlockedLevels[currentLang][currentCat]++;
-                    localStorage.setItem('kiratV2_Unlocked', JSON.stringify(unlockedLevels));
-                    document.getElementById("resultMsg").innerHTML += `<br>ਅਗਲਾ ਲੈਸਨ ਖੋਲ੍ਹ ਦਿੱਤਾ ਗਿਆ ਹੈ!`;
-                    setTimeout(() => {
-                        updateLessonDropdown();
-                        document.getElementById("lessonSelect").value = unlockedLevels[currentLang][currentCat];
-                        loadLesson();
-                    }, 3000);
+            orig.forEach((word, i) => {
+                if(typed[i] === word) {
+                    correct++;
+                    resTypedHtml += word + " ";
+                } else {
+                    resTypedHtml += `<span style="color:red">${typed[i] || ""}</span> `;
                 }
-            } else {
-                document.getElementById("resultMsg").innerHTML = `⚠️ ਤੁਹਾਡੀ ਐਕਿਊਰੇਸੀ ${finalAccuracy}% ਹੈ।<br>ਅਗਲਾ ਲੈਸਨ ਖੋਲ੍ਹਣ ਲਈ 98% ਜ਼ਰੂਰੀ ਹੈ। ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ!`;
+            });
+
+            let acc = Math.round((correct / orig.length) * 100);
+            document.getElementById("resAccuracy").innerText = "Accuracy: " + acc + "%";
+            document.getElementById("resOrig").innerText = orig.join(" ");
+            document.getElementById("resTyped").innerHTML = resTypedHtml;
+            document.getElementById("modal").style.display = "block";
+
+            // 98% logic
+            if(document.getElementById("cat").value === "Characters" && acc >= 98) {
+                alert("Congratulations! Next level unlocked.");
             }
         }
-
-        function resetTest() {
-            clearInterval(timerInterval);
-            testStarted = false;
-            timeLeft = totalTime;
-            document.getElementById("input").value = "";
-            document.getElementById("input").disabled = false;
-            document.getElementById("resultMsg").innerText = "";
-            document.getElementById("accuracyDisplay").innerText = "🎯 Accuracy: 0%";
-            updateTimerDisplay();
-        }
-
-        function toggleAdmin() {
-            let pass = prompt("ਐਡਮਿਨ ਪਾਸਵਰਡ ਭਰੋ (Password: kirat123):");
-            if (pass === "kirat123") {
-                let panel = document.getElementById("adminPanel");
-                panel.style.display = panel.style.display === "block" ? "none" : "block";
-            } else if (pass !== null) {
-                alert("ਗਲਤ ਪਾਸਵਰਡ!");
-            }
-        }
-
-        function addCustomLesson() {
-            let lang = document.getElementById("adminLangSelect").value;
-            let cat = document.getElementById("adminCatSelect").value;
-            let name = document.getElementById("newLessonName").value;
-            let text = document.getElementById("newLessonText").value;
-            
-            if (name && text) {
-                if(!lessonsData[lang][cat]) lessonsData[lang][cat] = [];
-                lessonsData[lang][cat].push({ name: name, text: text });
-                localStorage.setItem('kiratV2_Lessons', JSON.stringify(lessonsData));
-                alert(`${lang} ਦੇ ${cat} ਵਿੱਚ ਨਵਾਂ ਲੈਸਨ ਸੇਵ ਹੋ ਗਿਆ!`);
-                document.getElementById("newLessonName").value = "";
-                document.getElementById("newLessonText").value = "";
-                if(currentLang === lang && currentCat === cat) {
-                    updateLessonDropdown();
-                }
-            } else {
-                alert("ਕਿਰਪਾ ਕਰਕੇ ਲੈਸਨ ਦਾ ਨਾਮ ਅਤੇ ਪਹਿਰਾ ਦੋਵੇਂ ਭਰੋ।");
-            }
-        }
-
-        function clearProgress() {
-            if(confirm("ਕੀ ਤੁਸੀਂ ਸਾਰੇ ਬੱਚਿਆਂ ਦੀ ਪ੍ਰੋਗ੍ਰੈਸ ਰੀਸੈੱਟ ਕਰਨਾ ਚਾਹੁੰਦੇ ਹੋ? ਇਹ ਸਾਰੇ ਲੈਸਨ ਲੌਕ ਕਰ ਦੇਵੇਗਾ।")) {
-                unlockedLevels = {
-                    "Punjabi": { "Characters": 0, "Chunks": 0, "Paragraphs": 0 },
-                    "English": { "Characters": 0, "Chunks": 0, "Paragraphs": 0 },
-                    "Hindi": { "Characters": 0, "Chunks": 0, "Paragraphs": 0 }
-                };
-                localStorage.setItem('kiratV2_Unlocked', JSON.stringify(unlockedLevels));
-                updateLessonDropdown();
-                loadLesson();
-                alert("ਪ੍ਰੋਗ੍ਰੈਸ ਰੀਸੈੱਟ ਹੋ ਗਈ ਹੈ!");
-            }
-        }
-
-        window.onload = initApp;
+        window.onload = loadLesson;
     </script>
 </body>
 </html>
