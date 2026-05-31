@@ -9,10 +9,13 @@
         .display-area { font-size: 24px; padding: 20px; background: #eee; min-height: 150px; margin-bottom: 10px; border-radius: 5px; line-height: 1.6; }
         textarea { width: 100%; height: 150px; font-size: 24px; padding: 15px; box-sizing: border-box; }
         #adminPanel { display: none; background: #fff3cd; padding: 20px; border: 2px dashed #e67e22; margin-top: 20px; border-radius: 8px; }
-        /* Result Styles */
-        .res-correct { color: green; font-weight: bold; }
-        .res-wrong { color: red; text-decoration: line-through; font-weight: bold; }
-        .res-missing { background-color: yellow; color: black; font-weight: bold; }
+        
+        /* Advanced Result Styles */
+        .res-correct { color: #27ae60; font-weight: bold; }
+        .res-wrong { color: #e74c3c; text-decoration: line-through; font-weight: bold; }
+        .res-missing { background-color: #f1c40f; color: black; font-weight: bold; padding: 2px; }
+        .bracket-word { color: #27ae60; font-size: 16px; }
+
         #modal { display: none; position: fixed; top: 0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); }
         .modal-content { background: white; margin: 5% auto; padding: 20px; width: 80%; border-radius: 10px; max-height: 80vh; overflow-y: auto; }
         .admin-input { width: 100%; padding: 10px; margin-bottom: 10px; box-sizing: border-box; }
@@ -64,7 +67,7 @@
         <div class="modal-content">
             <h2>Result Report</h2>
             <p id="resAccuracy" style="font-weight:bold; font-size:20px;"></p>
-            <p id="resDisplay" style="line-height:2; font-size:20px;"></p>
+            <p id="resDisplay" style="line-height:2.5; font-size:20px;"></p>
             <button onclick="document.getElementById('modal').style.display='none'" style="padding:10px 20px;">Close</button>
         </div>
     </div>
@@ -97,11 +100,9 @@
             let c = document.getElementById("cat").value;
             let s = document.getElementById("lessonSelect");
             let display = document.getElementById("display");
-            
             let lessons = data[l][c] || [];
             s.innerHTML = "";
             lessons.forEach((item, i) => { s.innerHTML += `<option value="${i}">${item.name}</option>`; });
-            
             display.innerHTML = "";
             if(lessons.length > 0) {
                 let current = lessons[s.value || 0];
@@ -109,7 +110,6 @@
                 if (c === 'Steno') { display.innerHTML += `<div style="text-align:center; padding: 20px; color:#888; font-style:italic;">[ਟੈਕਸਟ ਲੁਕਾਇਆ ਗਿਆ ਹੈ - ਸਿਰਫ ਆਡੀਓ ਸੁਣੋ]</div>`; }
                 else { display.innerHTML += current.text; }
             } else { display.innerText = "No lesson found."; }
-            
             document.getElementById('timer').innerText = (c === 'Steno') ? "25:00" : "10:00";
             document.getElementById('input').value = "";
             started = false; clearInterval(timer);
@@ -145,10 +145,8 @@
             let audioUrl = document.getElementById("adminAudioUrl").value;
             let fileInput = document.getElementById("adminFile");
             if (fileInput.files.length > 0) audioUrl = URL.createObjectURL(fileInput.files[0]);
-
             let editVal = document.getElementById("editList").value;
             if(editVal) { let [oldCat, index] = editVal.split("|"); data[l][oldCat].splice(index, 1); }
-            
             data[l][c].push({name: name, audioUrl: audioUrl, text: text});
             localStorage.setItem('kiratData', JSON.stringify(data));
             alert("Saved/Updated!"); loadLesson();
@@ -166,6 +164,7 @@
 
         function resetData() { if(confirm("Delete all?")) { localStorage.removeItem('kiratData'); location.reload(); } }
 
+        // --- ADVANCED ALIGNMENT LOGIC ---
         function submitTest() {
             clearInterval(timer);
             let l = document.getElementById("lang").value;
@@ -175,21 +174,32 @@
             
             let origWords = currentText.trim().split(/\s+/);
             let typedWords = document.getElementById("input").value.trim().split(/\s+/);
-            let correct = 0;
+            
             let resHtml = "";
+            let correctCount = 0;
+            let typedIdx = 0;
 
-            origWords.forEach((word, i) => {
-                if (typedWords[i] === word) {
-                    correct++;
-                    resHtml += `<span class="res-correct">${word}</span> `;
-                } else if (typedWords[i] === undefined) {
-                    resHtml += `<span class="res-missing">${word}</span> `;
+            // Advanced Comparison
+            for (let i = 0; i < origWords.length; i++) {
+                let orig = origWords[i];
+                let typed = typedWords[typedIdx];
+
+                if (typed === undefined) {
+                    // Word is missing
+                    resHtml += `<span class="res-missing">${orig}</span> `;
+                } else if (typed === orig) {
+                    // Perfect match
+                    resHtml += `<span class="res-correct">${orig}</span> `;
+                    correctCount++;
+                    typedIdx++;
                 } else {
-                    resHtml += `<span class="res-wrong">${typedWords[i]}</span> <span class="res-correct">(${word})</span> `;
+                    // Wrong word: Show typed in red, correct in brackets
+                    resHtml += `<span class="res-wrong">${typed}</span> <span class="bracket-word">(${orig})</span> `;
+                    typedIdx++;
                 }
-            });
+            }
 
-            let acc = Math.round((correct / origWords.length) * 100);
+            let acc = Math.round((correctCount / origWords.length) * 100);
             document.getElementById("resAccuracy").innerText = "Accuracy: " + (isNaN(acc) ? 0 : acc) + "%";
             document.getElementById("resDisplay").innerHTML = resHtml;
             document.getElementById("modal").style.display = "block";
