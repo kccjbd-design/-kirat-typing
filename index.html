@@ -2,58 +2,83 @@
 <html lang="pa">
 <head>
     <meta charset="UTF-8">
-    <title>Kirat Typing Lab</title>
+    <title>Kirat Typing & Steno Lab</title>
     <style>
         body { font-family: sans-serif; background: #f4f7f6; padding: 20px; }
         .container { max-width: 1000px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        .display-area { font-size: 24px; padding: 15px; background: #eee; min-height: 100px; margin-bottom: 10px; border-radius: 5px; }
-        textarea { width: 100%; height: 150px; font-size: 24px; padding: 10px; box-sizing: border-box; }
+        .menu { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
+        button { padding: 10px 20px; cursor: pointer; }
+        .btn-active { background: #27ae60 !important; color: white; }
+        .display-area { font-size: 22px; padding: 15px; background: #eee; min-height: 150px; margin-bottom: 10px; border-radius: 5px; line-height: 1.6; }
+        textarea { width: 100%; height: 150px; font-size: 22px; padding: 10px; box-sizing: border-box; }
         #modal { display: none; position: fixed; top: 0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); }
-        .modal-content { background: white; margin: 10% auto; padding: 20px; width: 80%; border-radius: 10px; }
+        .modal-content { background: white; margin: 5% auto; padding: 20px; width: 80%; border-radius: 10px; max-height: 80vh; overflow-y: auto; }
+        .err { color: red; text-decoration: underline; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>⌨️ Kirat Typing Lab</h1>
-        <select id="lang" onchange="loadLesson()">
-            <option value="Punjabi">Punjabi</option>
-            <option value="English">English</option>
-        </select>
-        <select id="cat" onchange="loadLesson()">
-            <option value="Characters">Characters</option>
-            <option value="Chunks">Chunks</option>
-            <option value="Paragraphs">Paragraphs</option>
-        </select>
-        <select id="lessonSelect" onchange="loadLesson()"></select>
+        <h1 onclick="toggleAdmin()" style="text-align:center; cursor:pointer;">⌨️ Kirat Typing & Steno Lab</h1>
+        
+        <div class="menu">
+            <button id="typeBtn" class="btn-active" onclick="setMode('typing')">Typing (10 Min)</button>
+            <button id="stenoBtn" onclick="setMode('steno')">Steno (25 Min)</button>
+        </div>
+
+        <div style="text-align:center; font-size: 20px; margin-bottom:10px;">⏱️ <span id="timer">10:00</span></div>
+
+        <div class="controls" style="display:flex; gap:10px; margin-bottom:10px;">
+            <select id="lang" onchange="loadLesson()"><option value="Punjabi">Punjabi</option><option value="English">English</option></select>
+            <select id="cat" onchange="loadLesson()"><option value="Characters">Characters</option><option value="Chunks">Chunks</option><option value="Paragraphs">Paragraphs</option></select>
+            <select id="lessonSelect" onchange="loadLesson()"></select>
+        </div>
         
         <div id="display" class="display-area"></div>
         <textarea id="input" oninput="startTimer()"></textarea>
-        <button onclick="submitTest()" style="width:100%; padding:15px; margin-top:10px;">Submit Test</button>
+        <button onclick="submitTest()" style="width:100%; padding:15px; margin-top:10px; background:#e74c3c; color:white; border:none; font-size:18px;">Submit Test</button>
     </div>
 
     <div id="modal">
         <div class="modal-content">
             <h2>Result Report</h2>
-            <p id="resAccuracy"></p>
-            <p><strong>Original:</strong> <span id="resOrig"></span></p>
-            <p><strong>Your Input:</strong> <span id="resTyped"></span></p>
+            <p id="resAccuracy" style="font-weight:bold; font-size:20px;"></p>
+            <p><strong>Original Text:</strong><br><span id="resOrig"></span></p>
+            <p><strong>Your Input:</strong><br><span id="resTyped"></span></p>
             <button onclick="document.getElementById('modal').style.display='none'">Close</button>
         </div>
     </div>
 
     <script>
-        let data = {
-            "Punjabi": {
-                "Characters": [{name:"L1", text:"ਕ ਮ ਜ ਲ"}],
-                "Chunks": [{name:"C1", text:"ਇਹ ਇੱਕ ਚੰਕ ਹੈ"}],
-                "Paragraphs": [{name:"P1", text:"ਪੰਜਾਬੀ ਟਾਈਪਿੰਗ ਦਾ ਪਹਿਰਾ।"}]
-            },
-            "English": {
-                "Characters": [{name:"L1", text:"a s d f"}],
-                "Chunks": [{name:"C1", text:"quick brown fox"}],
-                "Paragraphs": [{name:"P1", text:"Typing is good."}]
-            }
+        let mode = 'typing';
+        let timeLeft = 600;
+        let timer = null;
+        let started = false;
+        
+        let data = JSON.parse(localStorage.getItem('kiratData')) || {
+            "Punjabi": { "Characters": [{name:"L1", text:"ਕ ਮ ਜ ਲ"}], "Chunks": [{name:"C1", text:"ਇਹ ਇੱਕ ਚੰਕ ਹੈ"}], "Paragraphs": [{name:"P1", text:"ਪੰਜਾਬੀ ਟਾਈਪਿੰਗ ਦਾ ਪਹਿਰਾ।"}] },
+            "English": { "Characters": [{name:"L1", text:"a s d f"}], "Chunks": [{name:"C1", text:"quick brown fox"}], "Paragraphs": [{name:"P1", text:"Typing is good."}] }
         };
+
+        function setMode(m) {
+            mode = m;
+            timeLeft = (m === 'typing') ? 600 : 1500;
+            document.getElementById('typeBtn').className = (m === 'typing') ? 'btn-active' : '';
+            document.getElementById('stenoBtn').className = (m === 'steno') ? 'btn-active' : '';
+            resetTest();
+        }
+
+        function startTimer() {
+            if(!started) {
+                started = true;
+                timer = setInterval(() => {
+                    timeLeft--;
+                    let m = Math.floor(timeLeft/60);
+                    let s = timeLeft % 60;
+                    document.getElementById('timer').innerText = m + ":" + (s<10?'0':'')+s;
+                    if(timeLeft <= 0) submitTest();
+                }, 1000);
+            }
+        }
 
         function loadLesson() {
             let l = document.getElementById("lang").value;
@@ -61,15 +86,22 @@
             let s = document.getElementById("lessonSelect");
             let lessons = data[l][c];
             s.innerHTML = "";
-            lessons.forEach((item, i) => {
-                s.innerHTML += `<option value="${i}">${item.name}</option>`;
-            });
+            lessons.forEach((item, i) => { s.innerHTML += `<option value="${i}">${item.name}</option>`; });
             document.getElementById("display").innerText = lessons[0].text;
+            resetTest();
+        }
+
+        function resetTest() {
+            clearInterval(timer);
+            started = false;
+            document.getElementById('input').value = "";
+            document.getElementById('timer').innerText = (mode === 'typing') ? "10:00" : "25:00";
         }
 
         function submitTest() {
+            clearInterval(timer);
             let orig = document.getElementById("display").innerText.split(" ");
-            let typed = document.getElementById("input").value.split(" ");
+            let typed = document.getElementById("input").value.trim().split(" ");
             let correct = 0;
             let resTypedHtml = "";
 
@@ -78,7 +110,7 @@
                     correct++;
                     resTypedHtml += word + " ";
                 } else {
-                    resTypedHtml += `<span style="color:red">${typed[i] || ""}</span> `;
+                    resTypedHtml += `<span class="err">${typed[i] || ""}</span> `;
                 }
             });
 
@@ -88,11 +120,16 @@
             document.getElementById("resTyped").innerHTML = resTypedHtml;
             document.getElementById("modal").style.display = "block";
 
-            // 98% logic
             if(document.getElementById("cat").value === "Characters" && acc >= 98) {
-                alert("Congratulations! Next level unlocked.");
+                alert("Congratulations! Level Unlocked.");
             }
         }
+
+        function toggleAdmin() {
+            let p = prompt("Admin Password:");
+            if(p === "kirat123") alert("Admin Panel Logic Here (You can add fields)");
+        }
+
         window.onload = loadLesson;
     </script>
 </body>
