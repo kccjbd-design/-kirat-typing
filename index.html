@@ -15,6 +15,7 @@
         
         /* Admin Panel Styles */
         #adminPanel { display: none; background: #fff3cd; padding: 20px; border: 2px dashed #e67e22; margin-top: 20px; border-radius: 8px; }
+        .admin-input { width: 100%; margin-bottom: 10px; padding: 10px; }
         
         #modal { display: none; position: fixed; top: 0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); }
         .modal-content { background: white; margin: 5% auto; padding: 20px; width: 80%; border-radius: 10px; max-height: 80vh; overflow-y: auto; }
@@ -44,8 +45,11 @@
 
         <!-- Admin Panel Section -->
         <div id="adminPanel">
-            <h3>🛠️ Admin Panel</h3>
-            <p>Admin tools are now active.</p>
+            <h3>🛠️ Add New Lesson</h3>
+            <input type="text" id="adminName" class="admin-input" placeholder="Lesson Name (e.g. Level 4)">
+            <textarea id="adminText" class="admin-input" placeholder="Paste lesson text here..."></textarea>
+            <button onclick="saveNewLesson()" style="background:#27ae60; color:white;">Save Lesson</button>
+            <button onclick="resetData()" style="background:#c0392b; color:white;">Reset All Data</button>
         </div>
     </div>
 
@@ -101,6 +105,26 @@
             lessons.forEach((item, i) => { s.innerHTML += `<option value="${i}">${item.name}</option>`; });
             document.getElementById("display").innerText = lessons[0].text;
             resetTest();
+        }
+
+        function saveNewLesson() {
+            let l = document.getElementById("lang").value;
+            let c = document.getElementById("cat").value;
+            let name = document.getElementById("adminName").value;
+            let text = document.getElementById("adminText").value;
+            if(name && text) {
+                data[l][c].push({name: name, text: text});
+                localStorage.setItem('kiratData', JSON.stringify(data));
+                alert("Saved!");
+                loadLesson();
+            }
+        }
+
+        function resetData() {
+            if(confirm("Delete all custom lessons?")) {
+                localStorage.removeItem('kiratData');
+                location.reload();
+            }
         }
 
         function resetTest() {
