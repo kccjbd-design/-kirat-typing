@@ -47,7 +47,10 @@
             </select>
             <hr>
             <select id="adminCat" class="admin-input">
-                <option value="Characters">Characters</option><option value="Chunks">Chunks</option><option value="Paragraphs">Paragraphs</option><option value="Steno">Steno</option>
+                <option value="Characters">Characters</option>
+                <option value="Chunks">Chunks</option>
+                <option value="Paragraphs">Paragraphs</option>
+                <option value="Steno">Steno</option>
             </select>
             <input type="text" id="adminName" class="admin-input" placeholder="Lesson Name">
             <input type="text" id="adminAudioUrl" class="admin-input" placeholder="Audio URL (Optional)">
@@ -74,8 +77,8 @@
         let timer = null; let started = false;
         let data = JSON.parse(localStorage.getItem('kiratData')) || {
             "Punjabi": { "Characters": [], "Chunks": [], "Paragraphs": [], "Steno": [] },
-            "English": { "Characters": [], "Chunks": [], "Paragraphs": [], "Steno": [] },
-            "Hindi": { "Characters": [], "Chunks": [], "Paragraphs": [], "Steno": [] }
+            "English": { "English": [], "Chunks": [], "Paragraphs": [], "Steno": [] },
+            "Hindi": { "Hindi": [], "Chunks": [], "Paragraphs": [], "Steno": [] }
         };
 
         function startTimer() {
@@ -162,7 +165,6 @@
 
         function resetData() { if(confirm("Delete all?")) { localStorage.removeItem('kiratData'); location.reload(); } }
 
-        // --- PURE ORIGINAL LOGIC ---
         function submitTest() {
             clearInterval(timer);
             let l = document.getElementById("lang").value;
