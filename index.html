@@ -13,6 +13,7 @@
         /* Result Styles */
         .res-correct { color: green; font-weight: bold; }
         .res-wrong { color: red; font-weight: bold; }
+        .res-missing { background-color: yellow; color: black; font-weight: bold; padding: 2px; }
         
         #modal { display: none; position: fixed; top: 0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); }
         .modal-content { background: white; margin: 5% auto; padding: 20px; width: 80%; border-radius: 10px; max-height: 80vh; overflow-y: auto; }
@@ -47,10 +48,7 @@
             </select>
             <hr>
             <select id="adminCat" class="admin-input">
-                <option value="Characters">Characters</option>
-                <option value="Chunks">Chunks</option>
-                <option value="Paragraphs">Paragraphs</option>
-                <option value="Steno">Steno</option>
+                <option value="Characters">Characters</option><option value="Chunks">Chunks</option><option value="Paragraphs">Paragraphs</option><option value="Steno">Steno</option>
             </select>
             <input type="text" id="adminName" class="admin-input" placeholder="Lesson Name">
             <input type="text" id="adminAudioUrl" class="admin-input" placeholder="Audio URL (Optional)">
@@ -77,8 +75,8 @@
         let timer = null; let started = false;
         let data = JSON.parse(localStorage.getItem('kiratData')) || {
             "Punjabi": { "Characters": [], "Chunks": [], "Paragraphs": [], "Steno": [] },
-            "English": { "English": [], "Chunks": [], "Paragraphs": [], "Steno": [] },
-            "Hindi": { "Hindi": [], "Chunks": [], "Paragraphs": [], "Steno": [] }
+            "English": { "Characters": [], "Chunks": [], "Paragraphs": [], "Steno": [] },
+            "Hindi": { "Characters": [], "Chunks": [], "Paragraphs": [], "Steno": [] }
         };
 
         function startTimer() {
@@ -165,6 +163,7 @@
 
         function resetData() { if(confirm("Delete all?")) { localStorage.removeItem('kiratData'); location.reload(); } }
 
+        // --- FIXED ALIGNMENT LOGIC ---
         function submitTest() {
             clearInterval(timer);
             let l = document.getElementById("lang").value;
@@ -173,20 +172,37 @@
             let currentText = data[l][c][s.value].text;
             
             let origWords = currentText.trim().split(/\s+/);
-            let typedWords = document.getElementById("input").value.trim().split(/\s+/);
-            let correct = 0;
+            let typedInput = document.getElementById("input").value.trim();
+            let typedWords = typedInput === "" ? [] : typedInput.split(/\s+/);
+            
             let resDisplayHtml = "";
+            let maxLen = Math.max(origWords.length, typedWords.length);
+            
+            for(let i = 0; i < maxLen; i++) {
+                let o = origWords[i];
+                let t = typedWords[i];
 
-            origWords.forEach((word, i) => {
-                if(typedWords[i] === word) { 
-                    correct++; 
-                    resDisplayHtml += `<span class="res-correct">${word}</span> `; 
-                } else { 
-                    resDisplayHtml += `<span class="res-wrong">${typedWords[i] || ""}</span> <span class="res-correct">(${word})</span> `; 
+                if (t === o) {
+                    resDisplayHtml += `<span class="res-correct">${o}</span> `;
+                } else if (t === undefined) {
+                    // Word is Missing
+                    resDisplayHtml += `<span class="res-missing">${o}</span> `;
+                } else if (o === undefined) {
+                    // Extra Word
+                    resDisplayHtml += `<span class="res-wrong">${t}</span> `;
+                } else {
+                    // Wrong Word
+                    resDisplayHtml += `<span class="res-wrong">${t}</span> <span class="res-correct">(${o})</span> `;
                 }
-            });
+            }
 
-            let acc = Math.round((correct / origWords.length) * 100);
+            // Accuracy calculation
+            let correctCount = 0;
+            for(let i = 0; i < origWords.length; i++) {
+                if(typedWords[i] === origWords[i]) correctCount++;
+            }
+
+            let acc = Math.round((correctCount / origWords.length) * 100);
             document.getElementById("resAccuracy").innerText = "Accuracy: " + (isNaN(acc) ? 0 : acc) + "%";
             document.getElementById("resDisplay").innerHTML = resDisplayHtml;
             document.getElementById("modal").style.display = "block";
