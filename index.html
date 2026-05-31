@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kirat Typing & Steno Lab</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #2c3e50; cursor: pointer; user-select: none; }
+        .menu { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
+        button { padding: 12px 20px; cursor: pointer; border: none; border-radius: 5px; font-weight: bold; background: #3498db; color: white; }
+        .btn-active { background: #27ae60; }
+        .display-area { font-size: 24px; padding: 20px; background: #fafafa; border: 2px solid #ddd; border-radius: 8px; min-height: 100px; margin-bottom: 15px; }
+        textarea { width: 100%; height: 120px; font-size: 20px; padding: 10px; border: 2px solid #3498db; border-radius: 8px; box-sizing: border-box; }
+        #adminPanel { display: none; background: #fff3cd; padding: 20px; border: 2px dashed #e67e22; border-radius: 8px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1 onclick="toggleAdmin()">⌨️ Kirat Typing & Steno Lab</h1>
+    
+    <div class="menu">
+        <button id="typeBtn" class="btn-active" onclick="setMode('typing')">⌨️ Typing Mode</button>
+        <button id="stenoBtn" onclick="setMode('steno')">🎧 Steno Mode</button>
+    </div>
+
+    <div id="mainSection">
+        <select id="langSelect" onchange="updateContent()">
+            <option value="punjabi">Punjabi</option>
+            <option value="english">English</option>
+            <option value="hindi">Hindi</option>
+        </select>
+        <div id="display" class="display-area">ਇੱਥੇ ਤੁਹਾਡਾ ਲੈਸਨ ਆਵੇਗਾ...</div>
+        <textarea id="input" placeholder="ਇੱਥੇ ਟਾਈਪ ਕਰੋ..."></textarea>
+    </div>
+
+    <div id="adminPanel">
+        <h2>⚙️ ਐਡਮਿਨ ਪੈਨਲ</h2>
+        <textarea id="adminText" placeholder="ਨਵਾਂ ਲੈਸਨ ਇੱਥੇ ਲਿਖੋ..." style="width:100%; height:80px;"></textarea>
+        <br>
+        <button onclick="saveLesson()" style="background:#e67e22; margin-top:10px;">💾 ਸੇਵ ਕਰੋ</button>
+        <button onclick="toggleAdmin()" style="background:#7f8c8d;">❌ ਬੰਦ ਕਰੋ</button>
+    </div>
+</div>
+
+<script>
+    function toggleAdmin() {
+        let pwd = prompt("ਐਡਮਿਨ ਪਾਸਵਰਡ ਭਰੋ:");
+        if(pwd === "kirat123") {
+            document.getElementById('adminPanel').style.display = document.getElementById('adminPanel').style.display === 'block' ? 'none' : 'block';
+        } else if(pwd !== null) {
+            alert("ਗਲਤ ਪਾਸਵਰਡ!");
+        }
+    }
+
+    function setMode(mode) {
+        document.getElementById('typeBtn').className = mode === 'typing' ? 'btn-active' : '';
+        document.getElementById('stenoBtn').className = mode === 'steno' ? 'btn-active' : '';
+        updateContent();
+    }
+
+    function saveLesson() {
+        let text = document.getElementById('adminText').value;
+        let lang = document.getElementById('langSelect').value;
+        localStorage.setItem("lesson_" + lang, text);
+        alert("ਸਫਲਤਾਪੂਰਵਕ ਸੇਵ ਹੋ ਗਿਆ!");
+        updateContent();
+    }
+
+    function updateContent() {
+        let lang = document.getElementById('langSelect').value;
+        let saved = localStorage.getItem("lesson_" + lang);
+        document.getElementById('display').innerText = saved ? saved : "ਕੋਈ ਲੈਸਨ ਨਹੀਂ ਹੈ।";
+    }
+
+    window.onload = updateContent;
+</script>
+</body>
+</html>
