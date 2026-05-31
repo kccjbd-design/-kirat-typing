@@ -18,7 +18,6 @@
 <body>
     <div class="container">
         <h1 onclick="toggleAdmin()" style="text-align:center; cursor:pointer;">⌨️ Kirat Typing & Steno Lab</h1>
-        
         <div style="text-align:center; font-size: 24px; margin-bottom:10px; font-weight:bold;">⏱️ <span id="timer">10:00</span></div>
 
         <div style="display:flex; gap:10px; margin-bottom:10px;">
@@ -37,20 +36,19 @@
         <button onclick="submitTest()" style="width:100%; padding:15px; margin-top:10px; background:#e74c3c; color:white; font-size:18px;">Submit Test</button>
 
         <div id="adminPanel">
-            <h3>🛠️ Add New Lesson</h3>
+            <h3>🛠️ Manage Lessons</h3>
+            <select id="editSelect" onchange="populateEditForm()" class="admin-input"><option value="">Select Lesson to Edit/Delete</option></select>
             <select id="adminCat" class="admin-input">
-                <option value="Characters">Characters</option>
-                <option value="Chunks">Chunks</option>
-                <option value="Paragraphs">Paragraphs</option>
-                <option value="Steno">Steno</option>
+                <option value="Characters">Characters</option><option value="Chunks">Chunks</option><option value="Paragraphs">Paragraphs</option><option value="Steno">Steno</option>
             </select>
             <input type="text" id="adminName" class="admin-input" placeholder="Lesson Name">
             <input type="text" id="adminAudioUrl" class="admin-input" placeholder="Audio URL (Optional)">
-            <label><strong>Select Local Recording:</strong></label>
             <input type="file" id="adminFile" accept="audio/*" class="admin-input">
             <textarea id="adminText" class="admin-input" placeholder="Paste Transcript here..."></textarea>
-            <button onclick="saveNewLesson()" style="background:#27ae60; color:white; padding:10px;">Save Lesson</button>
-            <button onclick="resetData()" style="background:#c0392b; color:white; padding:10px;">Reset All</button>
+            
+            <button onclick="saveNewLesson()" style="background:#27ae60; color:white; padding:10px;">Save/Update Lesson</button>
+            <button onclick="deleteLesson()" style="background:#c0392b; color:white; padding:10px;">Delete Lesson</button>
+            <button onclick="resetData()" style="background:#333; color:white; padding:10px;">Reset All</button>
         </div>
     </div>
 
@@ -103,14 +101,41 @@
                 if(current.audioUrl) {
                     display.innerHTML += `<audio controls src="${current.audioUrl}" style="width:100%"></audio><br>`;
                 }
-                display.innerHTML += current.text;
-            } else {
-                display.innerText = "No lesson found.";
-            }
+                // HIDE TEXT IF STENO
+                if(c !== 'Steno') {
+                    display.innerHTML += current.text;
+                } else {
+                    display.innerHTML += "<p style='text-align:center; color:gray; padding:20px;'>[Dictation Active - Text Hidden]</p>";
+                }
+            } else { display.innerText = "No lesson found."; }
             
             document.getElementById('timer').innerText = (c === 'Steno') ? "25:00" : "10:00";
             document.getElementById('input').value = "";
             started = false; clearInterval(timer);
+            populateEditSelect();
+        }
+
+        function populateEditSelect() {
+            let editSelect = document.getElementById("editSelect");
+            editSelect.innerHTML = '<option value="">Select Lesson to Edit</option>';
+            let l = document.getElementById("lang").value;
+            Object.keys(data[l]).forEach(cat => {
+                data[l][cat].forEach((item, i) => {
+                    editSelect.innerHTML += `<option value="${cat}|${i}">${cat} > ${item.name}</option>`;
+                });
+            });
+        }
+
+        function populateEditForm() {
+            let val = document.getElementById("editSelect").value;
+            if(!val) return;
+            let [cat, index] = val.split("|");
+            let l = document.getElementById("lang").value;
+            let item = data[l][cat][index];
+            document.getElementById("adminCat").value = cat;
+            document.getElementById("adminName").value = item.name;
+            document.getElementById("adminAudioUrl").value = item.audioUrl || "";
+            document.getElementById("adminText").value = item.text;
         }
 
         function saveNewLesson() {
@@ -119,25 +144,40 @@
             let name = document.getElementById("adminName").value;
             let text = document.getElementById("adminText").value;
             let audioUrl = document.getElementById("adminAudioUrl").value;
-            
             let fileInput = document.getElementById("adminFile");
-            if (fileInput.files.length > 0) {
-                audioUrl = URL.createObjectURL(fileInput.files[0]);
-            }
+            if (fileInput.files.length > 0) audioUrl = URL.createObjectURL(fileInput.files[0]);
 
-            if(name && text) {
-                data[l][c].push({name: name, audioUrl: audioUrl, text: text});
-                localStorage.setItem('kiratData', JSON.stringify(data));
-                alert("Saved!"); loadLesson();
+            let editVal = document.getElementById("editSelect").value;
+            if(editVal) {
+                let [oldCat, index] = editVal.split("|");
+                data[l][oldCat].splice(index, 1);
             }
+            
+            data[l][c].push({name: name, audioUrl: audioUrl, text: text});
+            localStorage.setItem('kiratData', JSON.stringify(data));
+            alert("Saved!"); loadLesson();
+        }
+
+        function deleteLesson() {
+            let val = document.getElementById("editSelect").value;
+            if(!val) return;
+            let [cat, index] = val.split("|");
+            let l = document.getElementById("lang").value;
+            data[l][cat].splice(index, 1);
+            localStorage.setItem('kiratData', JSON.stringify(data));
+            alert("Deleted!"); loadLesson();
         }
 
         function resetData() { if(confirm("Delete all?")) { localStorage.removeItem('kiratData'); location.reload(); } }
 
         function submitTest() {
             clearInterval(timer);
-            let displayContent = document.getElementById("display").innerText;
-            let origWords = displayContent.trim().split(/\s+/);
+            let l = document.getElementById("lang").value;
+            let c = document.getElementById("cat").value;
+            let s = document.getElementById("lessonSelect");
+            let currentText = data[l][c][s.value].text; // Get text from data, not display div
+            
+            let origWords = currentText.trim().split(/\s+/);
             let typedWords = document.getElementById("input").value.trim().split(/\s+/);
             let correct = 0;
             let resTypedHtml = "";
@@ -149,7 +189,7 @@
 
             let acc = Math.round((correct / origWords.length) * 100);
             document.getElementById("resAccuracy").innerText = "Accuracy: " + (isNaN(acc) ? 0 : acc) + "%";
-            document.getElementById("resOrig").innerText = displayContent;
+            document.getElementById("resOrig").innerText = currentText;
             document.getElementById("resTyped").innerHTML = resTypedHtml;
             document.getElementById("modal").style.display = "block";
         }
